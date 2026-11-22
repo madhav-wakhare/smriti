@@ -1,0 +1,331 @@
+@import "tailwindcss";
+@import "@fontsource/ibm-plex-sans/latin-400.css";
+@import "@fontsource/ibm-plex-sans/latin-500.css";
+@import "@fontsource/ibm-plex-sans/latin-600.css";
+@import "@fontsource/ibm-plex-mono/latin-400.css";
+@import "@fontsource/ibm-plex-mono/latin-500.css";
+
+/* "dark:" utilities follow the two dark themes, Black and Terminal. */
+@custom-variant dark (&:where([data-theme="terminal"], [data-theme="terminal"] *, [data-theme="black"], [data-theme="black"] *));
+
+/*
+ * Smriti. Calm and plain: readable sans-serif text, mono only for keys, times and numbers, soft corners,
+ * thin lines for structure (shadows only on menus and dialogs). Three themes: Black (neutral greys on
+ * black), Terminal (green on near-black green) and White (ink on white, green accent).
+ * Components use only these tokens.
+ */
+:root,
+:root[data-theme="terminal"] {
+  color-scheme: dark;
+  --bg: #0d180a;
+  --sidebar: #0d180a;
+  --surface: #0f1d0c;
+  --surface-2: #142a10;
+  --surface-3: #1b3816;
+  --border: #2a4a22;
+  --border-strong: #3f6b33;
+  --fg: #7fee64;
+  --fg-2: #5fbf4a;
+  --fg-3: #3f8a31;
+  --accent: #7fee64;
+  --accent-soft: #1b3816;
+  --accent-fg: #0d180a;
+  --overlay: rgb(4 10 3 / 0.78);
+  --shadow: none;
+  --frame: #2a4a22;
+
+  --series-task: #64d9ee;
+  --series-learning: #eec764;
+  --series-note: #7fee64;
+  --good: #7fee64;
+  --warning: #eec764;
+  --serious: #ee9a64;
+  --critical: #ff6b5e;
+  --life: #b9e8ff;
+  --life-soft: #12262c;
+  --book: #e0b878;
+}
+
+/* Black: neutral greys on pure black, white as the accent. */
+:root[data-theme="black"] {
+  color-scheme: dark;
+  --bg: #000000;
+  --sidebar: #000000;
+  --surface: #0a0a0a;
+  --surface-2: #141414;
+  --surface-3: #1f1f1f;
+  --border: #262626;
+  --border-strong: #3a3a3a;
+  --fg: #ededed;
+  --fg-2: #a3a3a3;
+  --fg-3: #6b6b6b;
+  --accent: #ffffff;
+  --accent-soft: #1f1f1f;
+  --accent-fg: #000000;
+  --overlay: rgb(0 0 0 / 0.75);
+  --shadow: none;
+  --frame: #262626;
+
+  --series-task: #60a5fa;
+  --series-learning: #fbbf24;
+  --series-note: #4ade80;
+  --good: #4ade80;
+  --warning: #fbbf24;
+  --serious: #fb923c;
+  --critical: #f87171;
+  --life: #c4b5fd;
+  --life-soft: #1e1b2e;
+  --book: #e0b878;
+}
+
+/* White: ink on white, green as the accent. */
+:root[data-theme="white"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --sidebar: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f3f6f2;
+  --surface-3: #e5ece3;
+  --border: #d8dfd5;
+  --border-strong: #aebaa9;
+  --fg: #141a12;
+  --fg-2: #4b5747;
+  --fg-3: #7d8a78;
+  --accent: #23860f;
+  --accent-soft: #e3f4dc;
+  --accent-fg: #ffffff;
+  --overlay: rgb(20 26 18 / 0.3);
+  --shadow: none;
+  --frame: #d8dfd5;
+
+  --series-task: #1a74b8;
+  --series-learning: #c4600f;
+  --series-note: #23860f;
+  --good: #23860f;
+  --warning: #a87100;
+  --serious: #c4561b;
+  --critical: #c8302a;
+  --life: #2f5f9e;
+  --life-soft: #e4edf7;
+  --book: #8a5a1f;
+}
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+
+  --color-bg: var(--bg);
+  --color-sidebar: var(--sidebar);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+  --color-good: var(--good);
+  --color-warning: var(--warning);
+  --color-serious: var(--serious);
+  --color-critical: var(--critical);
+  --color-life: var(--life);
+  --color-life-soft: var(--life-soft);
+  --color-book: var(--book);
+  --color-task: var(--series-task);
+  --color-learning: var(--series-learning);
+  --color-note: var(--series-note);
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    border-color: var(--border);
+  }
+
+  .dot {
+    border-radius: 9999px;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+    color: inherit;
+  }
+
+  h1, h2, h3, h4 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+/* ---------------------------------------------------------------- terminal pieces */
+@layer components {
+  /* An uppercase, spaced label: TABLE OF CONTENTS, TODAY, WAITING LONGEST. */
+  /* A small section or field label: quiet, sentence case. */
+  .t-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--fg-2);
+  }
+  /* A term in running text, boxed like a glossary link. */
+  .t-term {
+    background: var(--accent-soft);
+    color: var(--fg);
+    padding: 0 0.3em;
+    border-radius: 3px;
+  }
+  /* The small tag beside a title, like "SM" beside Streaming Multiprocessor. */
+  .t-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.6em;
+    padding: 0 0.5em;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface-2);
+    color: var(--fg-2);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  /* The block cursor after a path or a prompt. */
+  .t-cursor::after {
+    content: "";
+    display: inline-block;
+    width: 0.55em;
+    height: 1.05em;
+    margin-left: 0.15em;
+    vertical-align: -0.15em;
+    background: var(--accent);
+    animation: t-blink 1.1s steps(1) infinite;
+  }
+  /* The selected row in the table of contents: the whole row filled, ink reversed. */
+  .t-active {
+    background: var(--accent) !important;
+    color: var(--accent-fg) !important;
+  }
+  .t-active .t-tag {
+    background: transparent;
+  }
+  .t-active * {
+    color: var(--accent-fg) !important;
+    border-color: color-mix(in srgb, var(--accent-fg) 40%, transparent) !important;
+  }
+  .t-ascii {
+    font-family: var(--font-mono);
+    white-space: pre;
+    line-height: 1.15;
+    color: var(--fg-2);
+    user-select: none;
+  }
+}
+
+@keyframes t-blink {
+  50% { opacity: 0; }
+}
+
+/* ---------------------------------------------------------------- motion
+   Short entrance animations only (120-200 ms). Closing is instant so the app
+   never waits on an animation. Turned off when the OS asks for reduced motion.
+   Fill mode is "backwards" so no transform stays on an element afterwards
+   (a lingering transform would break fixed-position children such as drag previews). */
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+}
+@keyframes drop-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(32px); }
+}
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+@keyframes page-in {
+  from { opacity: 0; }
+}
+
+@layer utilities {
+  .anim-fade { animation: fade-in 150ms ease-out backwards; }
+  .anim-pop { animation: pop-in 170ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+  .anim-drop { animation: drop-in 130ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+  .anim-drawer { animation: slide-in-right 200ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+  .anim-sidebar { animation: slide-in-left 200ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+  .anim-toast { animation: rise-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+  .anim-page { animation: page-in 140ms ease-out backwards; }
+  .anim-panel { animation: fade-in 140ms ease-out backwards; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------- mark
+   On load स्मृ settles into place; on hover it lifts a little. */
+@keyframes mark-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.92); }
+}
+.mark .mark-glyph {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: mark-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.mark-link:hover .mark-glyph {
+  transform: translateY(-2px);
+}

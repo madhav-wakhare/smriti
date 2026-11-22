@@ -1,0 +1,37 @@
+# Dev overlay: `make dev`. Same base images as the release, source mounted, reload on.
+# API on $SMRITI_PORT, Vite dev server (with hot reload, proxying /api to the API) on $SMRITI_WEB_PORT.
+services:
+  smriti:
+    build:
+      target: api-dev
+    image: smriti:dev
+    container_name: smriti-app-dev
+    restart: "no"
+    environment:
+      SMRITI_STATIC_DIR: ""
+      SMRITI_LOG_LEVEL: debug
+    volumes:
+      - ./api/smriti:/app/smriti
+      - ./api/tests:/app/tests
+      - ./data:/data
+      - ./import:/import:ro
+      - ${SMRITI_VAULT_PATH:-./vault-not-set}:/vault
+
+  web:
+    build:
+      context: .
+      target: web-dev
+    image: smriti-web:dev
+    container_name: smriti-app-web-dev
+    environment:
+      SMRITI_API_URL: http://smriti:8000
+    ports:
+      - "${SMRITI_BIND:-127.0.0.1}:${SMRITI_WEB_PORT:-5190}:5173"
+    volumes:
+      - ./web:/web
+      - web-node-modules:/web/node_modules
+    depends_on:
+      - smriti
+
+volumes:
+  web-node-modules:

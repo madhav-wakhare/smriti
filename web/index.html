@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0d180a" />
+    <meta name="description" content="Smriti: Plan the day, log time, keep a reading list and revisit ideas." />
+    <!-- स्मृ as the tab icon: ICO for Safari and older browsers, SVG (sharper) for the rest, Apple touch, manifest. -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/svg+xml" href="/smriti.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <title>Smriti</title>
+    <script>
+      try {
+        // This app was called Kiln: carry its saved preferences (theme, filters, last project) over once.
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          if (k && k.indexOf("kiln-") === 0 && localStorage.getItem("smriti-" + k.slice(5)) === null)
+            localStorage.setItem("smriti-" + k.slice(5), localStorage.getItem(k));
+        }
+        var t = localStorage.getItem("smriti-theme");
+        if (t === "light" || t === "lightgreen" || t === "lightblue") t = "white";
+        if (t === "blue") t = "black";
+        if (["black", "terminal", "white"].indexOf(t) < 0) t = "terminal";
+        document.documentElement.dataset.theme = t;
+      } catch (e) { document.documentElement.dataset.theme = "terminal"; }
+    </script>
+    <script>
+      // Start the first data requests now, in parallel with the app's download. The API client picks
+      // these up instead of asking again (see takePrefetched in src/lib/api.ts).
+      (function () {
+        var p = (window.__smritiPrefetch = {});
+        var first = location.pathname === "/" ? ["/today", "/quotes"] : [];
+        first.concat(["/config", "/projects", "/captures?status=open", "/sessions/running"]).forEach(function (path) {
+          p[path] = fetch("/api" + path).then(function (r) { return r.ok ? r.json() : Promise.reject(r); });
+          p[path].catch(function () {});
+        });
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

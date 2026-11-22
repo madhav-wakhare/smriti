@@ -1,0 +1,15 @@
+# local state: database, imports, backups
+data/
+import/
+vault-not-set/
+.env
+# build output and dependencies (installed only inside containers)
+node_modules/
+web/dist/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+# design reference copied from the earlier UI experiment; not part of the app
+.reference/
+*.tsbuildinfo

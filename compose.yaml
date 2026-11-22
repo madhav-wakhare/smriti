@@ -1,0 +1,32 @@
+# Smriti, run from the built image: `make up`.
+# Config comes from the environment (.env on this machine); see docs/SPEC.md section 4.
+# Not plain "smriti": Arc's Makefile removes any container named smriti (Arc was once called that).
+name: smriti-app
+
+services:
+  smriti:
+    build:
+      context: .
+      target: runtime
+    image: smriti:latest
+    container_name: smriti-app
+    restart: unless-stopped
+    environment:
+      PORT: "8000"
+      SMRITI_DB_PATH: /data/smriti.db
+      TZ: ${TZ:-UTC}
+      # Obsidian export: off until SMRITI_VAULT_PATH names your vault (see .env.example).
+      SMRITI_VAULT_PATH: ${SMRITI_VAULT_PATH:-}
+      SMRITI_OBSIDIAN_FOLDER: ${SMRITI_OBSIDIAN_FOLDER:-Smriti/Learning}
+      SMRITI_OBSIDIAN_ARTICLES_FOLDER: ${SMRITI_OBSIDIAN_ARTICLES_FOLDER:-Smriti/Articles}
+      SMRITI_OBSIDIAN_AUTO: ${SMRITI_OBSIDIAN_AUTO:-on}
+    ports:
+      - "${SMRITI_BIND:-127.0.0.1}:${SMRITI_PORT:-8090}:8000"
+    volumes:
+      # The one piece of state: the SQLite file (and backups made by `smriti backup`).
+      - ./data:/data
+      # Read-only drop folder for one-off imports (`make import`).
+      - ./import:/import:ro
+      # Your Obsidian vault, if you set one; otherwise an empty placeholder Smriti ignores.
+      - ${SMRITI_VAULT_PATH:-./vault-not-set}:/vault
+    stop_grace_period: 10s
