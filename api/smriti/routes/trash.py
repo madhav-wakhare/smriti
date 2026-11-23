@@ -6,7 +6,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Response
 
-from .. import clock, db
+from .. import clock, db, models
 from ..config import Config
 from ..deps import Cfg, Conn
 from ..errors import conflict, not_found
@@ -30,11 +30,21 @@ def trashed(conn: sqlite3.Connection, kind: str, item_id: int) -> dict:
     return row
 
 
+def deleted_with(conn: sqlite3.Connection, task_id: int, deleted_at: str) -> list[int]:
+    """The children (and theirs) that went to the trash together with this task."""
+    return [i for i in models.descendant_ids(conn, task_id, live_only=False)
+            if db.scalar(conn, "SELECT deleted_at FROM tasks WHERE id = ?", (i,)) == deleted_at]
+
+
 def purge(conn: sqlite3.Connection, kind: str, item_id: int) -> None:
-    """Delete for good. A project takes all its tasks with it."""
+    """Delete for good. A project takes all its tasks with it; a task, the children deleted with it."""
     table, _ = TABLES[kind]
     if kind == "project":
         conn.execute("DELETE FROM tasks WHERE project_id = ?", (item_id,))
+    if kind == "task":
+        stamp = db.scalar(conn, "SELECT deleted_at FROM tasks WHERE id = ?", (item_id,))
+        for child in deleted_with(conn, item_id, stamp) if stamp else []:
+            conn.execute("DELETE FROM tasks WHERE id = ?", (child,))
     conn.execute(f"DELETE FROM {table} WHERE id = ?", (item_id,))
 
 
@@ -55,8 +65,9 @@ def list_trash(conn: Conn, cfg: Cfg):
     items = []
     for kind, (table, title) in TABLES.items():
         where = "x.deleted_at IS NOT NULL"
-        if kind == "task":  # tasks deleted with their project come back with it
-            where += " AND x.project_id NOT IN (SELECT id FROM projects WHERE deleted_at IS NOT NULL)"
+        if kind == "task":  # tasks deleted with their project, or with their parent, come back with it
+            where += (" AND x.project_id NOT IN (SELECT id FROM projects WHERE deleted_at IS NOT NULL)"
+                      " AND NOT EXISTS (SELECT 1 FROM tasks pt WHERE pt.id = x.parent_id AND pt.deleted_at = x.deleted_at)")
         for row in db.all_rows(conn, f"SELECT x.id, x.{title} AS title, x.deleted_at FROM {table} x WHERE {where}"):
             items.append({"kind": kind, **row, "purge_on": purge_on(row["deleted_at"], cfg)})
     return sorted(items, key=lambda i: i["deleted_at"], reverse=True)
@@ -68,6 +79,12 @@ def restore(kind: Kind, item_id: int, conn: Conn):
     table, _ = TABLES[kind]
     if kind == "task" and db.scalar(conn, "SELECT deleted_at FROM projects WHERE id = ?", (row["project_id"],)):
         raise conflict("Its project is in the trash; restore the project")
+    if kind == "task" and row["parent_id"] and db.scalar(
+            conn, "SELECT deleted_at FROM tasks WHERE id = ?", (row["parent_id"],)) == row["deleted_at"]:
+        raise conflict("It was deleted together with its parent; restore the parent")
+    if kind == "task":
+        for child in deleted_with(conn, item_id, row["deleted_at"]):
+            conn.execute("UPDATE tasks SET deleted_at = NULL WHERE id = ?", (child,))
     if kind == "project":
         conn.execute("UPDATE tasks SET deleted_at = NULL WHERE project_id = ? AND deleted_at = ?",
                      (item_id, row["deleted_at"]))

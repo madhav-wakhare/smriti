@@ -227,6 +227,12 @@ function TaskList({ tasks }: { tasks: Task[] }) {
               <td className="px-3 py-2.5">
                 <span className={clsx(t.status === "done" && "text-fg-2 line-through")}>{t.title}</span>
                 <span className="ml-2 font-mono text-[12px] text-fg-3">{t.key}</span>
+                {t.parent_key && <span className="ml-2 font-mono text-[12px] text-fg-3">↳ {t.parent_key}</span>}
+                {t.children > 0 && (
+                  <span className="ml-2 text-[12px] text-fg-3 tabular-nums" title="Child tasks done">
+                    {t.children_done}/{t.children} children
+                  </span>
+                )}
               </td>
               <td className="px-3 whitespace-nowrap text-fg-2">{TASK_STATUS.find((s) => s.value === t.status)?.label}</td>
               <td className="px-3 whitespace-nowrap" title={PRIORITY[t.priority].label}>

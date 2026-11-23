@@ -120,8 +120,9 @@ Project  { id, key, name, archived: boolean, open_count: number, created_at }
 Task     { id, key: "WORK-12", project_id, project_key, parent_id|null, parent_key|null, title, body,
            status: "todo"|"doing"|"done", priority: 0..4, planned_on|null, due_on|null, estimate_min|null,
            repeat, tags: string[], url|null, position, logged_min: number, checks_done: number,
-           checks_total: number, children: number, created_at, updated_at, status_at, done_at|null }
-TaskFull Task & { checks: Check[], notes: Note[], sessions: Session[], events: Event[], subtasks: Task[] }
+           checks_total: number, children: number, children_done: number, created_at, updated_at, status_at, done_at|null }
+TaskFull Task & { checks: Check[], notes: Note[], sessions: Session[], events: Event[], subtasks: Task[],
+           ancestors: [{id, key, title, status}] (top first, ending with the parent), open_descendants: number }
 Check    { id, task_id, title, done: boolean, position }
 Source   { id, kind, title, url|null, author, site, image|null, summary, body, status: "queued"|"active"|"done",
            progress, total|null, tags: string[], ref|null, logged_min, created_at, updated_at, started_at|null, done_at|null }
@@ -319,3 +320,9 @@ It prints a count of what was imported.
 - Schema 4 (`004_obsidian.sql`): Obsidian export is back. Sources gain `obsidian_path`, `obsidian_key`
   and `exported_at`; a note carries `smriti_id: SRC-<id>`, and Smriti only overwrites or removes notes
   that carry its id (or Arc's).
+- Child tasks, Jira style: a task's `parent_id` can point at another task, and that one at another, up
+  to 10 levels; the API refuses loops. `PATCH /api/tasks/{id}` with `{"status": "done", "close_children": true}`
+  also closes every open child, grandchild and so on. Deleting a task sends its children to the trash
+  with it (same `deleted_at`); the trash lists them under the parent, restoring the parent brings them
+  back, and a child deleted with its parent cannot be restored on its own (409). Changing a task's parent
+  is logged as a `parent` event.

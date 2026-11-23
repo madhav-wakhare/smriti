@@ -19,6 +19,7 @@ Status = Literal["todo", "doing", "done"]
 Repeat = Literal["none", "daily", "weekdays", "weekly", "monthly"]
 STEP = 1000.0  # gap between positions in a fresh column
 EVENT_FIELDS = ("status", "priority", "planned_on", "due_on", "title")
+MAX_DEPTH = 10  # a chain may go this many levels deep (Jira itself stops at three)
 
 
 class TaskIn(BaseModel):
@@ -50,6 +51,8 @@ class TaskPatch(BaseModel):
     url: str | None = None
     parent_id: int | None = None
     position: float | None = None
+    # With status "done": also close every open child, grandchild and so on.
+    close_children: bool = False
 
 
 class MoveIn(BaseModel):
@@ -111,6 +114,19 @@ def check_parent(conn: sqlite3.Connection, task_id: int | None, parent_id: int) 
         if not row or (current == parent_id and row["deleted_at"]):
             raise invalid("Parent task not found")
         current = row["parent_id"]
+    if len(seen) + 1 + subtree_height(conn, task_id) > MAX_DEPTH:
+        raise invalid(f"A chain of tasks can be at most {MAX_DEPTH} levels deep")
+
+
+def subtree_height(conn: sqlite3.Connection, task_id: int | None) -> int:
+    """How many levels of children sit under a task (0 when it has none)."""
+    if task_id is None:
+        return 0
+    return db.scalar(conn, """WITH RECURSIVE tree(id, depth) AS (
+                                  SELECT id, 1 FROM tasks WHERE parent_id = ? AND deleted_at IS NULL
+                                  UNION SELECT t.id, tree.depth + 1 FROM tasks t JOIN tree ON t.parent_id = tree.id
+                                  WHERE t.deleted_at IS NULL AND tree.depth < 50)
+                              SELECT coalesce(max(depth), 0) FROM tree""", (task_id,))
 
 
 def next_date(base: date, repeat: str) -> date:
@@ -199,6 +215,11 @@ def apply_changes(conn: sqlite3.Connection, task_id: int, changes: dict, cfg: Co
 
     if values.get("parent_id") is not None:
         check_parent(conn, task_id, values["parent_id"])
+    if "parent_id" in values:
+        key = "SELECT p.key || '-' || t.number FROM tasks t JOIN projects p ON p.id = t.project_id WHERE t.id = ?"
+        models.log_event(conn, "task_id", task_id, "parent",
+                         db.scalar(conn, key, (old["parent_id"],)) if old["parent_id"] else None,
+                         db.scalar(conn, key, (values["parent_id"],)) if values["parent_id"] else None)
     if "project_id" in values:
         live_project(conn, values["project_id"])
         values["number"] = take_number(conn, values["project_id"])
@@ -300,17 +321,26 @@ def get_task(task_id: int, conn: Conn):
     task["notes"] = models.notes(conn, "task_id", task_id)
     task["sessions"] = models.sessions(conn, "x.task_id = ?", (task_id,))
     task["events"] = models.events(conn, "task_id", task_id)
-    task["subtasks"] = models.tasks(conn, "t.parent_id = ?", (task_id,))
+    task["subtasks"] = models.tasks(conn, "t.parent_id = ?", (task_id,), order="t.position, t.id")
+    task["ancestors"] = models.ancestors(conn, task_id)
+    task["open_descendants"] = sum(
+        1 for i in models.descendant_ids(conn, task_id)
+        if db.scalar(conn, "SELECT status FROM tasks WHERE id = ?", (i,)) != "done")
     return task
 
 
 @router.patch("/tasks/{task_id}")
 def update_task(task_id: int, data: TaskPatch, conn: Conn, cfg: Cfg):
     changes = data.model_dump(exclude_unset=True)
+    close_children = changes.pop("close_children", False)
     for field in ("project_id", "title", "body", "status", "priority", "repeat", "tags", "position"):
         if field in changes and changes[field] is None:
             raise invalid(f"{field} cannot be null")
     apply_changes(conn, task_id, changes, cfg)
+    if close_children and changes.get("status") == "done":
+        for child_id in models.descendant_ids(conn, task_id):
+            if db.scalar(conn, "SELECT status FROM tasks WHERE id = ?", (child_id,)) != "done":
+                apply_changes(conn, child_id, {"status": "done"}, cfg)
     return models.task(conn, task_id)
 
 
@@ -333,9 +363,13 @@ def move_task(task_id: int, data: MoveIn, conn: Conn, cfg: Cfg):
 
 @router.delete("/tasks/{task_id}", status_code=204)
 def delete_task(task_id: int, conn: Conn):
+    """Like Jira, deleting a task takes its children (and theirs) with it. They share one deleted_at, so
+    restoring the task from Trash brings the whole chain back."""
     models.task_row(conn, task_id)
-    models.stop_running_on(conn, "task_id", [task_id])
-    conn.execute("UPDATE tasks SET deleted_at = ? WHERE id = ?", (clock.now(), task_id))
+    ids = [task_id, *models.descendant_ids(conn, task_id)]
+    models.stop_running_on(conn, "task_id", ids)
+    ts = clock.now()
+    conn.execute(f"UPDATE tasks SET deleted_at = ? WHERE id IN ({','.join('?' * len(ids))})", (ts, *ids))
     return Response(status_code=204)
 
 

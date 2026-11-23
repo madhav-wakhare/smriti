@@ -232,7 +232,20 @@ function Card({ task, lifted, showProject }: { task: Task; lifted?: boolean; sho
       <p className={clsx("text-[14px] leading-snug", done && "text-fg-2 line-through decoration-fg-3")}>{task.title}</p>
       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px] text-fg-3">
         <span className="font-mono">{task.key}</span>
-        {showProject && <span>· {task.project_key}</span>}
+        {task.parent_key && (
+          <span className="font-mono" title={`Child of ${task.parent_key}`}>
+            ↳ {task.parent_key}
+          </span>
+        )}
+        {showProject && !task.parent_key && <span>· {task.project_key}</span>}
+        {task.children > 0 && (
+          <span
+            title={`${task.children_done} of ${task.children} child tasks done`}
+            className={clsx("rounded border px-1 leading-5 tabular-nums", task.children_done === task.children ? "border-good/50 text-good" : "border-line text-fg-2")}
+          >
+            {task.children_done}/{task.children}
+          </span>
+        )}
         <span className="flex-1" />
         {planned && <span className="rounded bg-accent-soft px-1.5 leading-5 font-medium text-fg">Today</span>}
         {task.due_on && !done && (

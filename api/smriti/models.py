@@ -8,13 +8,47 @@ from .errors import not_found
 
 # ---------------------------------------------------------------- tasks
 
+# A task's children, their children and so on (Jira-style chains: a parent, its children, their children).
+DESCENDANTS = """
+WITH RECURSIVE tree(id) AS (
+    SELECT id FROM tasks WHERE parent_id = ?
+    UNION SELECT t.id FROM tasks t JOIN tree ON t.parent_id = tree.id
+)
+SELECT id FROM tree
+"""
+
+
+def descendant_ids(conn: sqlite3.Connection, task_id: int, live_only: bool = True) -> list[int]:
+    ids = [r["id"] for r in db.all_rows(conn, DESCENDANTS, (task_id,))]
+    if live_only and ids:
+        marks = ",".join("?" * len(ids))
+        ids = [r["id"] for r in db.all_rows(conn, f"SELECT id FROM tasks WHERE id IN ({marks}) AND deleted_at IS NULL", tuple(ids))]
+    return ids
+
+
+def ancestors(conn: sqlite3.Connection, task_id: int) -> list[dict]:
+    """The chain above a task, from the top down to its parent: [{id, key, title, status}]."""
+    chain, seen = [], {task_id}
+    parent = db.scalar(conn, "SELECT parent_id FROM tasks WHERE id = ?", (task_id,))
+    while parent and parent not in seen:
+        seen.add(parent)
+        row = db.one(conn, """SELECT t.id, p.key || '-' || t.number AS key, t.title, t.status, t.parent_id
+                              FROM tasks t JOIN projects p ON p.id = t.project_id WHERE t.id = ?""", (parent,))
+        if not row:
+            break
+        chain.append({k: row[k] for k in ("id", "key", "title", "status")})
+        parent = row["parent_id"]
+    return list(reversed(chain))
+
 TASK_SELECT = """
 SELECT t.*, p.key AS project_key,
        pp.key || '-' || pt.number AS parent_key,
        (SELECT coalesce(sum(s.minutes), 0) FROM sessions s WHERE s.task_id = t.id) AS logged_min,
        (SELECT count(*) FROM checks c WHERE c.task_id = t.id AND c.done) AS checks_done,
        (SELECT count(*) FROM checks c WHERE c.task_id = t.id) AS checks_total,
-       (SELECT count(*) FROM tasks ch WHERE ch.parent_id = t.id AND ch.deleted_at IS NULL) AS children
+       (SELECT count(*) FROM tasks ch WHERE ch.parent_id = t.id AND ch.deleted_at IS NULL) AS children,
+       (SELECT count(*) FROM tasks ch WHERE ch.parent_id = t.id AND ch.deleted_at IS NULL
+                                        AND ch.status = 'done') AS children_done
 FROM tasks t
 JOIN projects p ON p.id = t.project_id
 LEFT JOIN tasks pt ON pt.id = t.parent_id
@@ -23,7 +57,7 @@ LEFT JOIN projects pp ON pp.id = pt.project_id
 
 TASK_FIELDS = ("id", "project_id", "project_key", "parent_id", "parent_key", "title", "body", "status",
                "priority", "planned_on", "due_on", "estimate_min", "repeat", "url", "position", "logged_min",
-               "checks_done", "checks_total", "children", "created_at", "updated_at", "status_at", "done_at",
+               "checks_done", "checks_total", "children", "children_done", "created_at", "updated_at", "status_at", "done_at",
                "obsidian_path", "exported_at")
 
 

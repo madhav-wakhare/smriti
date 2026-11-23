@@ -31,6 +31,8 @@ export type Task = {
   checks_done: number;
   checks_total: number;
   children: number;
+  /** How many of its direct children are done. */
+  children_done: number;
   created_at: string;
   updated_at: string;
   status_at: string;
@@ -48,7 +50,19 @@ export type Session = {
   minutes: number | null;
   note: string;
 };
-export type TaskFull = Task & { checks: Check[]; notes: Note[]; sessions: Session[]; events: Event[]; subtasks: Task[] };
+export type TaskRef = { id: number; key: string; title: string; status: TaskStatus };
+export type TaskFull = Task & {
+  checks: Check[];
+  notes: Note[];
+  sessions: Session[];
+  events: Event[];
+  /** Direct children. */
+  subtasks: Task[];
+  /** The chain above this task, top first, ending with its parent. */
+  ancestors: TaskRef[];
+  /** Open children, grandchildren and so on. */
+  open_descendants: number;
+};
 
 export type Source = {
   id: number;

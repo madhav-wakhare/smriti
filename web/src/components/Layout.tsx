@@ -92,7 +92,11 @@ export function Mark({ word = true }: { word?: boolean }) {
   return (
     <span className="mark flex items-center gap-2">
       <svg viewBox="0 0 64 64" className="size-8 shrink-0" aria-hidden>
-        <path className="mark-glyph" d={SMRITI_GLYPH} fill="var(--accent)" />
+        {/* Shifted so स्म sits on the same baseline as "smriti" (its headline then meets the top of the "t");
+            the vowel sign ृ hangs below, as Devanagari does. The favicon keeps the centred glyph. */}
+        <g transform="translate(0 6.4)">
+          <path className="mark-glyph" d={SMRITI_GLYPH} fill="var(--accent)" />
+        </g>
       </svg>
       {word && <span className="text-[20px] font-medium tracking-tight text-fg">smriti</span>}
     </span>

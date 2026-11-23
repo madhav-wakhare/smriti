@@ -132,7 +132,12 @@ The weekend planner is not part of Smriti, so it is left behind.
 
 - Tasks live in projects and move from To do to Doing to Done. Each has a priority (Low, Medium, High
   or Urgent), an optional due date, tags, a checklist, notes and a history of changes. A task can repeat
-  daily, on weekdays, weekly or monthly, and it can have subtasks.
+  daily, on weekdays, weekly or monthly.
+- Child tasks work like Jira's. Add a child from the parent's window, or link a task you already have;
+  a child can have children of its own. The parent shows a progress bar of its children, each child shows
+  the chain above it (`WORK-1 › WORK-5 › WORK-9`), and board cards show `↳ WORK-1` on a child and `2/5` on
+  a parent. Closing a parent with open children asks whether to close them too, and deleting a parent
+  sends its children to Trash with it.
 - Today is your plan. Add a task to it from its window or from the box under the plan, where you can
   also type a new task and press Enter. Unfinished tasks from earlier days stay on the plan until you
   finish them or take them off.

@@ -14,7 +14,8 @@ import { useProjects } from "../lib/hooks";
 import { BlurInput, BlurTextarea, parseTags, useTodayDate, useWrite } from "./common";
 import { useActions } from "./Layout";
 import { TimeBox } from "./time";
-import { Button, Checkbox, DateInput, IconButton, Input, Select, Tabs, Textarea, useToast } from "./ui";
+import { Breadcrumb, ChildTasks, ParentField, useCloseParent } from "./work/Children";
+import { Button, Checkbox, DateInput, IconButton, Input, Modal, Select, Tabs, Textarea, useToast } from "./ui";
 
 const REPEAT: { value: Repeat; label: string }[] = [
   { value: "none", label: "Does not repeat" },
@@ -51,6 +52,8 @@ function TaskBody({ id, onClose }: { id: number; onClose: () => void }) {
   const today = useTodayDate();
   const { data: projects } = useProjects();
   const [more, setMore] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const close = useCloseParent(t);
 
   if (isLoading) return <p className="p-8 text-[14px] text-fg-3">Loading…</p>;
   if (error || !t)
@@ -65,10 +68,11 @@ function TaskBody({ id, onClose }: { id: number; onClose: () => void }) {
   const planned = !!t.planned_on && t.planned_on <= today;
 
   const remove = async () => {
+    setConfirmDelete(false);
     const ok = await write(() => api.del(`/tasks/${id}`));
     if (ok === undefined) return;
     onClose();
-    toast(`Deleted ${t.key}`, "default", {
+    toast(t.children ? `Deleted ${t.key} and its child tasks` : `Deleted ${t.key}`, "default", {
       label: "Undo",
       onClick: () => write(() => api.post(`/trash/task/${id}/restore`)).then(() => openTask(id)),
     });
@@ -78,14 +82,9 @@ function TaskBody({ id, onClose }: { id: number; onClose: () => void }) {
     <>
       {/* top line: where this task lives, and close */}
       <div className="flex h-12 items-center gap-3 border-b border-line pl-5 pr-2 text-[13px] text-fg-2">
-        <span className="font-mono">{t.key}</span>
-        {t.parent_key && (
-          <button onClick={() => t.parent_id && openTask(t.parent_id)} className="hover:text-fg hover:underline">
-            in {t.parent_key}
-          </button>
-        )}
+        <Breadcrumb task={t} />
         <span className="flex-1" />
-        <IconButton aria-label="Delete task" title="Delete task" onClick={remove}>
+        <IconButton aria-label="Delete task" title="Delete task" onClick={() => (t.children ? setConfirmDelete(true) : remove())}>
           <Trash2 size={15} />
         </IconButton>
         <IconButton aria-label="Close" title="Close (Esc)" onClick={onClose}>
@@ -114,6 +113,10 @@ function TaskBody({ id, onClose }: { id: number; onClose: () => void }) {
             <Checklist task={t} />
           </Section>
 
+          <Section title="Child tasks">
+            <ChildTasks task={t} />
+          </Section>
+
           <Section title="Time">
             <TimeBox subject={{ task_id: t.id }} sessions={t.sessions} loggedMin={t.logged_min} estimateMin={t.estimate_min} />
           </Section>
@@ -126,7 +129,7 @@ function TaskBody({ id, onClose }: { id: number; onClose: () => void }) {
         {/* settings column */}
         <aside className="space-y-5 border-t border-line p-5 md:border-t-0 md:border-l md:p-6">
           <Setting label="Status">
-            <Tabs<TaskStatus> value={t.status} onChange={(v) => patch({ status: v })} tabs={TASK_STATUS.map((s) => ({ value: s.value, label: s.value === "todo" ? "To do" : s.label }))} />
+            <Tabs<TaskStatus> value={t.status} onChange={(v) => close.setStatus(v)} tabs={TASK_STATUS.map((s) => ({ value: s.value, label: s.value === "todo" ? "To do" : s.label }))} />
           </Setting>
 
           <Setting label="Priority">
@@ -170,6 +173,10 @@ function TaskBody({ id, onClose }: { id: number; onClose: () => void }) {
             </Select>
           </Setting>
 
+          <Setting label="Parent">
+            <ParentField task={t} />
+          </Setting>
+
           <button onClick={() => setMore(!more)} className="flex w-full items-center gap-1.5 text-[13px] text-fg-2 hover:text-fg" aria-expanded={more}>
             <ChevronDown size={14} className={clsx("transition-transform", !more && "-rotate-90")} />
             More
@@ -209,7 +216,6 @@ function TaskBody({ id, onClose }: { id: number; onClose: () => void }) {
                   </a>
                 )}
               </Setting>
-              <Subtasks task={t} />
               <History task={t} />
               <p className="text-[12px] text-fg-3">
                 Created {fmtDate(t.created_at)} · updated {fmtDate(t.updated_at)}
@@ -218,6 +224,26 @@ function TaskBody({ id, onClose }: { id: number; onClose: () => void }) {
           )}
         </aside>
       </div>
+      {close.dialog}
+      <Modal
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        title={`Delete ${t.key}?`}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={remove}>
+              Delete all
+            </Button>
+          </>
+        }
+      >
+        <p className="text-[14px] text-fg-2">
+          Its {t.children} child {t.children === 1 ? "task goes" : "tasks go"} to Trash with it, along with their own children. Restoring {t.key} brings them all back.
+        </p>
+      </Modal>
     </>
   );
 }
@@ -314,24 +340,6 @@ function Notes({ task }: { task: TaskFull }) {
         </Button>
       )}
     </div>
-  );
-}
-
-function Subtasks({ task }: { task: TaskFull }) {
-  const { openTask, newTask } = useActions();
-  return (
-    <Setting label="Subtasks">
-      <div className="space-y-1">
-        {task.subtasks.map((s) => (
-          <button key={s.id} onClick={() => openTask(s.id)} className={clsx("block w-full truncate rounded px-1 py-0.5 text-left text-[13px] hover:bg-surface-2", s.status === "done" && "text-fg-3 line-through")}>
-            {s.title}
-          </button>
-        ))}
-        <button onClick={() => newTask({ parent_id: task.id, project_id: task.project_id })} className="text-[13px] text-accent hover:underline">
-          + Add a subtask
-        </button>
-      </div>
-    </Setting>
   );
 }
 
