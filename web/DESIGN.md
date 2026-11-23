@@ -34,7 +34,7 @@ Develop with `make dev` (UI at http://localhost:5190, API in its own container).
    priority, due date or "Today" when one applies.
 6. **Empty states** are one friendly sentence plus one action, with at most one small ASCII figure.
 7. **Use theme tokens only** (`bg`, `surface`, `line`, `fg`, `fg-2`, `fg-3`, `accent`, status
-   colours). There are three themes (Black, Terminal, White), stored under `smriti-theme`.
+   colours). There are four themes (Black, Terminal, Obsidian, White), stored under `smriti-theme`.
 
 ## Shared pieces
 

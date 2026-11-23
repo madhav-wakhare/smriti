@@ -22,7 +22,7 @@
         var t = localStorage.getItem("smriti-theme");
         if (t === "light" || t === "lightgreen" || t === "lightblue") t = "white";
         if (t === "blue") t = "black";
-        if (["black", "terminal", "white"].indexOf(t) < 0) t = "terminal";
+        if (["black", "terminal", "obsidian", "white"].indexOf(t) < 0) t = "terminal";
         document.documentElement.dataset.theme = t;
       } catch (e) { document.documentElement.dataset.theme = "terminal"; }
     </script>

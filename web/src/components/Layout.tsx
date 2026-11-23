@@ -39,10 +39,11 @@ export function useActions() {
 
 // ---------------------------------------------------------------- theme (one store for the app)
 
-export type Theme = "black" | "terminal" | "white";
+export type Theme = "black" | "terminal" | "obsidian" | "white";
 export const THEMES: { value: Theme; label: string; color: string; accent: string }[] = [
   { value: "black", label: "Black", color: "#000000", accent: "#ffffff" },
   { value: "terminal", label: "Terminal", color: "#0d180a", accent: "#7fee64" },
+  { value: "obsidian", label: "Obsidian", color: "#242a2f", accent: "#7ba7da" },
   { value: "white", label: "White", color: "#ffffff", accent: "#23860f" },
 ];
 const themeListeners = new Set<() => void>();

@@ -189,7 +189,8 @@ The weekend planner is not part of Smriti, so it is left behind.
 - Deleted things go to Trash for 30 days, and you can restore them from there. Deleting a task, source or
   revisit item also shows an Undo button for a few seconds.
 - Today shows one of your quotes and changes it every 2 minutes. Add and edit them in Settings.
-- There are three themes: Black, Terminal (green on dark) and White. Switch from the gear menu or in
+- There are four themes: Black, Terminal (green on dark), Obsidian (slate and soft blue, after the
+  "Claude Pane" Obsidian theme, in Anthropic Sans when it is installed) and White. Switch from the gear menu or in
   Settings.
 - On a phone, the page tabs move to a row you can scroll sideways.
 

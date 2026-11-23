@@ -52,7 +52,7 @@ function Box({ title, hint, children }: { title: string; hint?: string; children
 function ThemeChooser() {
   const [theme, setTheme] = useTheme();
   return (
-    <div role="radiogroup" aria-label="Theme" className="grid gap-3 sm:grid-cols-3">
+    <div role="radiogroup" aria-label="Theme" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {THEMES.map((t) => {
         const on = theme === t.value;
         return (
