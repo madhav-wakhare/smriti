@@ -57,3 +57,14 @@ def test_never_overwrites_someone_elses_note(vclient, vault):
     out = vclient.post(f"/api/sources/{src['id']}/obsidian").json()
     assert out["obsidian_path"] == f"learn/CRDTs (SRC-{src['id']}).md"
     assert (vault / "learn" / "CRDTs.md").read_text() == "my own hand-written note\n"
+
+
+def test_article_note_goes_to_its_collection_folder(vclient, vault):
+    col = vclient.post("/api/collections", json={"name": "Inference engineering"}).json()
+    src = vclient.post("/api/sources", json={"kind": "article", "title": "GPU Glossary", "url": "https://example.com/g"}).json()
+    vclient.patch(f"/api/sources/{src['id']}", json={"collection_ids": [col["id"]]})
+    out = vclient.post(f"/api/sources/{src['id']}/obsidian").json()
+    assert out["obsidian_path"] == "articles/Inference engineering/GPU Glossary.md"
+    assert 'collections: ["Inference engineering"]' in (vault / out["obsidian_path"]).read_text()
+    vclient.patch(f"/api/collections/{col['id']}", json={"name": "Inference"})
+    assert 'collections: ["Inference"]' in (vault / out["obsidian_path"]).read_text()  # note refreshed, file stays put

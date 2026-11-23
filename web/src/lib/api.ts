@@ -85,6 +85,8 @@ export type Source = {
   started_at: string | null;
   done_at: string | null;
   /** Path of its note inside the Obsidian vault, once saved there. */
+  /** The collections it sits in, by name. */
+  collections: { id: number; name: string }[];
   obsidian_path: string | null;
   exported_at: string | null;
 };
@@ -165,6 +167,7 @@ export type ObsidianStatus = {
   articles_folder: string;
   auto: boolean;
 };
+export type Collection = { id: number; name: string; count: number; created_at: string };
 export type Config = { version: string; tz: string; today: string; trash_days: number };
 
 export class ApiError extends Error {

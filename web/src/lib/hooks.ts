@@ -1,7 +1,7 @@
 /** Shared queries and small hooks. Query keys start with the concept name, so one invalidate refreshes a concept. */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { api, qs, type Capture, type ObsidianStatus, type Quote, type Revisit, type Config, type Project, type Session, type Source, type Task, type Today } from "./api";
+import { api, qs, type Capture, type Collection, type ObsidianStatus, type Quote, type Revisit, type Config, type Project, type Session, type Source, type Task, type Today } from "./api";
 
 export const useConfig = () => useQuery({ queryKey: ["config"], queryFn: () => api.get<Config>("/config"), staleTime: 60_000 });
 export const useProjects = () => useQuery({ queryKey: ["projects"], queryFn: () => api.get<Project[]>("/projects") });
@@ -16,6 +16,7 @@ export const useSources = (params: { kind?: string; status?: string; tag?: strin
 export const useCaptures = (status = "open") =>
   useQuery({ queryKey: ["captures", status], queryFn: () => api.get<Capture[]>(`/captures${qs({ status })}`) });
 export const useObsidian = () => useQuery({ queryKey: ["obsidian"], queryFn: () => api.get<ObsidianStatus>("/obsidian"), staleTime: 60_000 });
+export const useCollections = () => useQuery({ queryKey: ["collections"], queryFn: () => api.get<Collection[]>("/collections") });
 export const useQuotes = () => useQuery({ queryKey: ["quotes"], queryFn: () => api.get<Quote[]>("/quotes"), staleTime: 60_000 });
 export const useRevisits = (status = "active") =>
   useQuery({ queryKey: ["revisits", status], queryFn: () => api.get<Revisit[]>(`/revisits${qs({ status })}`) });

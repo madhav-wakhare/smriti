@@ -23,20 +23,32 @@ link, book details from Open Library), and you can turn those off.
     </td>
     <td width="50%" valign="top">
       <b>Tasks: board</b><br>
-      <sub>To do, Doing and Done. Drag a card to move it. Done shows the last 7 days.</sub><br><br>
-      <img src="docs/screenshots/tasks-board.webp" alt="Board with three columns of task cards">
+      <sub>To do, Doing and Done. Drag a card to move it. Children show their parent (↳ WORK-1), parents their progress (1/3).</sub><br><br>
+      <img src="docs/screenshots/tasks-board.webp" alt="Board with three columns of task cards, some marked as children of another task">
     </td>
   </tr>
   <tr>
+    <td width="50%" valign="top">
+      <b>Tasks: list</b><br>
+      <sub>Every task in one sortable table, with each child's parent and each parent's progress.</sub><br><br>
+      <img src="docs/screenshots/tasks-list.webp" alt="List of tasks with priority, status, due date and time">
+    </td>
     <td width="50%" valign="top">
       <b>Tasks: timeline</b><br>
       <sub>A day drawn like a trace: one row per task, a bar for each stretch of work.</sub><br><br>
       <img src="docs/screenshots/tasks-timeline.webp" alt="Timeline of a day with bars for each work session">
     </td>
+  </tr>
+  <tr>
     <td width="50%" valign="top">
       <b>A task</b><br>
-      <sub>Description, checklist, time and notes. Log time as 1h 30m, or press +15m.</sub><br><br>
-      <img src="docs/screenshots/task.webp" alt="Task window with checklist, time logged and notes">
+      <sub>The chain above it (WORK-1 › WORK-3), checklist, child tasks, time and notes.</sub><br><br>
+      <img src="docs/screenshots/task.webp" alt="Task window with a breadcrumb, checklist, child tasks with a progress bar, and time logged">
+    </td>
+    <td width="50%" valign="top">
+      <b>Child tasks</b><br>
+      <sub>Like Jira: add a child or link an existing task. A child can have children of its own.</sub><br><br>
+      <img src="docs/screenshots/task-children.webp" alt="Parent task window listing its three child tasks, one with children of its own">
     </td>
   </tr>
   <tr>
@@ -114,7 +126,8 @@ network you trust.
 ### Coming from Arc
 
 If you used Arc, Smriti can bring all of it across: tasks, time logs, comments and history, learning
-items, articles and books, Radar captures, Revisit topics, daily reviews, quotes, and Arc's trash. Notes Arc
+items, articles and books with their collections, Radar captures, Revisit topics, daily reviews, quotes,
+and Arc's trash. Notes Arc
 saved to Obsidian stay linked, so Smriti updates them in place. Times
 come across in your time zone, and task keys like `WORK-12` stay the same. The import only runs on an
 empty Smriti.
@@ -146,14 +159,19 @@ The weekend planner is not part of Smriti, so it is left behind.
 - To log time, press play to start a timer, use +15m, +30m, +1h or +2h for work you just did, or choose
   Log time and type it as you would in Jira: `1h 30m`, `45m`, `2.5h`, `1:30` or `1d` (8 hours). The
   start time fills in as now minus the time spent. A task's estimate is written the same way.
-- The Report covers one week: time per day and per project, what you finished, what carried over, and
-  your end-of-day notes.
+- The Report covers one week: time per day, where the time went (each project, plus learning and Revisit,
+  adding up to the week's total), what you finished (tasks and sources), what carried over, and your
+  end-of-day notes.
 
 ### Learning
 
 - Learn holds what you learn from: topics, articles, books and videos. Paste a link and Smriti fills in
   the title and site (YouTube videos get their thumbnail). Search Open Library to add a book with its
   cover and page count, then track how far you've read.
+- Collections keep sources organised (AI, SRE, Databases...). They sit down the left of Learn: pick one
+  to see only its sources, drag a card onto one to file it there, or use "Add to a collection" in the
+  source's window. A source can be in several collections. A new article's note goes into a folder named
+  after its first collection, as Arc did.
 - Save any source to Obsidian with the gem icon (in its window, or on its card in Learn when you hover)
   as a Markdown note: title, link, tags, status, summary and your notes,
   with front matter you can query. Edit the source and its note updates. Smriti only touches notes it

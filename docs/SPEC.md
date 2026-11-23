@@ -166,6 +166,12 @@ PATCH  /api/sources/{id}
 DELETE /api/sources/{id}
 POST   /api/lookup/link                    {url} -> {title, site, author, summary, image, kind: "article"|"video"}
 POST   /api/sources/{id}/obsidian         write (or rewrite) its note in the vault -> Source (obsidian_path, exported_at); 409 vault_unavailable
+GET    /api/collections                    [{id, name, count, created_at}]  (count = live sources in it)
+POST   /api/collections                    {name}  (names are unique, ignoring case; 409 on a clash)
+PATCH  /api/collections/{id}               {name}  (rewrites the saved notes of its sources)
+DELETE /api/collections/{id}               the collection goes; its sources stay
+POST   /api/collections/{id}/sources       {source_id} -> Source
+DELETE /api/collections/{id}/sources/{source_id} -> Source
 GET    /api/obsidian                       {vault_path, mounted, writable, is_obsidian_vault, folder, articles_folder, auto}
 GET    /api/lookup/books                   ?q= -> [{title, author, year, total, image, ref}]   (Open Library)
 
@@ -326,3 +332,11 @@ It prints a count of what was imported.
   with it (same `deleted_at`); the trash lists them under the parent, restoring the parent brings them
   back, and a child deleted with its parent cannot be restored on its own (409). Changing a task's parent
   is logged as a `parent` event.
+- Schema 6 (`006_collections.sql`): collections and `source_collections`. Sources gain `collections:
+  [{id, name}]`, `GET /api/sources?collection_id=` filters by one, and `PATCH /api/sources/{id}` takes
+  `collection_ids` to set them all at once. Notes list `collections:` in their front matter, and a new
+  article note is filed under `<articles folder>/<first collection>`. The Arc import brings Arc's
+  collections across instead of copying their names into tags; `smriti import-arc-collections PATH` does
+  this for a database imported earlier and removes those tag copies.
+- The week report's numbers are unchanged; the UI shows learning and Revisit time beside the projects (so
+  the bars add up to the week) and counts finished sources with finished tasks.

@@ -1,4 +1,4 @@
-"""Admin commands (factor 12): python -m smriti migrate | import-arc PATH | import-quotes PATH | import-arc-trash PATH | import-arc-obsidian PATH | backup DIR | purge-trash."""
+"""Admin commands (factor 12): python -m smriti migrate | import-arc PATH | import-quotes PATH | import-arc-trash PATH | import-arc-obsidian PATH | import-arc-collections PATH | backup DIR | purge-trash."""
 
 import argparse
 import sqlite3
@@ -70,6 +70,19 @@ def cmd_import_obsidian(cfg: config.Config, args) -> int:
     return 0
 
 
+def cmd_import_collections(cfg: config.Config, args) -> int:
+    from .importer_arc import ImportRefused, import_collections
+
+    db.migrate(cfg.db_path)
+    try:
+        out = import_collections(args.path, cfg)
+    except ImportRefused as exc:
+        print(f"Import refused: {exc}", file=sys.stderr)
+        return 1
+    print(f"{out['collections']} collection(s) from Arc; {out['links']} source(s) put in a collection.")
+    return 0
+
+
 def cmd_backup(cfg: config.Config, args) -> int:
     """A consistent copy made with SQLite's online backup, safe while Smriti runs."""
     folder = Path(args.dir)
@@ -112,6 +125,9 @@ def main(argv: list[str] | None = None) -> int:
     ob = sub.add_parser("import-arc-obsidian", help="link sources to the Obsidian notes Arc wrote for them")
     ob.add_argument("path")
     ob.set_defaults(run=cmd_import_obsidian)
+    co = sub.add_parser("import-arc-collections", help="bring Arc's collections across and file sources in them")
+    co.add_argument("path")
+    co.set_defaults(run=cmd_import_collections)
     bak = sub.add_parser("backup", help="copy the database into a folder")
     bak.add_argument("dir")
     bak.set_defaults(run=cmd_backup)

@@ -63,10 +63,23 @@ export default function Report() {
 
 function Body({ r }: { r: WeekReport }) {
   const a = useActions();
+  // Time per project covers tasks; learning and Revisit time get their own rows, so the bars add up to
+  // the week's total (Arc filed learning under its LRN project, so its report showed it there).
+  const learning = r.days.reduce((n, d) => n + d.source_min, 0);
+  const revisit = r.days.reduce((n, d) => n + d.revisit_min, 0);
+  const rows = [
+    ...r.by_project,
+    ...(learning ? [{ project_key: "~learning", name: "Learning (sources)", minutes: learning }] : []),
+    ...(revisit ? [{ project_key: "~revisit", name: "Revisit", minutes: revisit }] : []),
+  ];
+  const finished = r.totals.done + r.sources_done.length;
   return (
     <>
       <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Num label="Tasks done" value={r.totals.done} />
+        <Num
+          label={r.sources_done.length ? `Finished: ${r.totals.done} tasks, ${r.sources_done.length} sources` : "Tasks finished"}
+          value={finished}
+        />
         <Num label="Time logged" value={fmtMin(r.totals.logged_min)} />
         <Num label="Time learning" value={fmtMin(r.totals.learning_min)} />
         <Num label="Things captured" value={r.totals.captures} />
@@ -76,8 +89,8 @@ function Body({ r }: { r: WeekReport }) {
         <Box title="Time per day">
           <DayChart days={r.days} />
         </Box>
-        <Box title="Time by project">
-          {r.by_project.length ? <ProjectBars rows={r.by_project} /> : <Quiet>No time on tasks this week.</Quiet>}
+        <Box title="Where the time went">
+          {rows.length ? <ProjectBars rows={rows} /> : <Quiet>No time logged this week.</Quiet>}
         </Box>
       </div>
 

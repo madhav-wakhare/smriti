@@ -99,6 +99,7 @@ class ArcImport:
         tickets = self.ticket_items()
         self.tasks()
         self.topics(tickets)
+        self.collections()
         self.articles()
         self.books()
         self.checks()
@@ -194,26 +195,39 @@ class ArcImport:
         row = self.arc.execute("SELECT id FROM items WHERE id = ? AND deleted_at IS NULL", (item_id,)).fetchone()
         return row[0] if row else None
 
+    def collections(self) -> None:
+        """Arc's collections come across as Smriti collections (Arc id -> Smriti id in self.collection_ids)."""
+        self.collection_ids: dict[int, int] = {}
+        for c in self.rows("SELECT * FROM collections ORDER BY id"):
+            found = db.scalar(self.smriti, "SELECT id FROM collections WHERE name = ? COLLATE NOCASE", (c["name"],))
+            self.collection_ids[c["id"]] = found or self.insert("collections", {"name": c["name"], "created_at": self.utc(c["created_at"])})
+
+    def arc_collections_of(self, article: dict) -> list[int]:
+        """The Arc collection ids an article is in: its list, plus the one its Obsidian note was filed under."""
+        ids = [r["collection_id"] for r in self.rows("SELECT collection_id FROM article_collections WHERE article_id = ?", (article["id"],))]
+        if article.get("collection_id") and article["collection_id"] not in ids:
+            ids.append(article["collection_id"])
+        return ids
+
+    def link_collections(self, source_id: int, arc_ids: list[int]) -> None:
+        for cid in arc_ids:
+            if cid in self.collection_ids:
+                self.smriti.execute("INSERT OR IGNORE INTO source_collections (source_id, collection_id, added_at) VALUES (?, ?, ?)",
+                                  (source_id, self.collection_ids[cid], clock.now()))
+
     def articles(self) -> None:
-        names = {}
-        for r in self.rows("""SELECT ac.article_id, c.name FROM article_collections ac
-                              JOIN collections c ON c.id = ac.collection_id"""):
-            names.setdefault(r["article_id"], []).append(r["name"])
-        folder = {r["id"]: r["name"] for r in self.rows("SELECT id, name FROM collections")}
         for a in self.rows("SELECT * FROM articles ORDER BY id"):
-            collections = names.get(a["id"], [])
-            if a.get("collection_id") in folder:
-                collections.append(folder[a["collection_id"]])
             status = ARTICLE_STATUS[a["status"]]
             source_id = self.insert("sources", {
                 "kind": "video" if lookup.is_video(a["url"]) else "article", "title": a["title"], "url": a["url"],
                 "author": a["author"] or "", "site": a["site"] or "", "image": a["image"] or video_thumb(a["url"]),
                 "summary": a["description"] or "", "body": a["notes"] or "", "status": status,
-                "tags": self.tags(a["tags"], collections), "created_at": self.utc(a["created_at"]),
+                "tags": self.tags(a["tags"]), "created_at": self.utc(a["created_at"]),
                 "updated_at": self.utc(a["updated_at"]),
                 "started_at": self.utc(a["updated_at"]) if status == "active" else None,
                 "done_at": self.utc(a["read_at"] or a["updated_at"]) if status == "done" else None,
                 **self.note_of(a, f"ART-{a['id']}")})
+            self.link_collections(source_id, self.arc_collections_of(a))
             if ticket := self.live_ticket(a.get("item_id")):
                 self.source_ids[ticket] = source_id
 
@@ -427,6 +441,38 @@ def import_obsidian_notes(path: str, cfg: Config) -> int:
                     (note["obsidian_path"], note["obsidian_key"], note["exported_at"], row["title"], imp.utc(row["created_at"])))
                 found += cur.rowcount
         return found
+    finally:
+        smriti.close()
+        arc.close()
+
+
+def import_collections(path: str, cfg: Config) -> dict:
+    """For a Smriti database imported before collections came across: create Arc's collections, put each
+    article in its collections (matched by title and creation time), and drop the collection names that an
+    earlier import added to its tags. Safe to run twice."""
+    arc = open_arc(path)
+    smriti = db.connect(cfg.db_path)
+    try:
+        with db.transaction(smriti):
+            imp = ArcImport(arc, smriti, cfg)
+            imp.collections()
+            names = {c["id"]: c["name"].strip().lower() for c in imp.rows("SELECT id, name FROM collections")}
+            linked = 0
+            for a in imp.rows("SELECT * FROM articles ORDER BY id"):
+                sid = db.scalar(smriti, "SELECT id FROM sources WHERE title = ? AND created_at = ?", (a["title"], imp.utc(a["created_at"])))
+                if not sid:
+                    continue
+                arc_ids = imp.arc_collections_of(a)
+                before = db.scalar(smriti, "SELECT count(*) FROM source_collections WHERE source_id = ?", (sid,))
+                imp.link_collections(sid, arc_ids)
+                linked += db.scalar(smriti, "SELECT count(*) FROM source_collections WHERE source_id = ?", (sid,)) - before
+                own = set(db.tags_out(a["tags"]))
+                drop = {names[i] for i in arc_ids if i in names} - own
+                tags = db.tags_out(db.scalar(smriti, "SELECT tags FROM sources WHERE id = ?", (sid,)))
+                kept = [t for t in tags if t not in drop]
+                if kept != tags:
+                    smriti.execute("UPDATE sources SET tags = ? WHERE id = ?", (db.tags_in(kept), sid))
+            return {"collections": len(imp.collection_ids), "links": linked}
     finally:
         smriti.close()
         arc.close()

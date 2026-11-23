@@ -1,5 +1,6 @@
 """Loading rows and shaping them into the API objects of SPEC section 3."""
 
+import json
 import sqlite3
 from datetime import date
 
@@ -94,14 +95,18 @@ def task(conn: sqlite3.Connection, task_id: int) -> dict:
 # ---------------------------------------------------------------- sources
 
 SOURCE_SELECT = """
-SELECT s.*, (SELECT coalesce(sum(x.minutes), 0) FROM sessions x WHERE x.source_id = s.id) AS logged_min
+SELECT s.*, (SELECT coalesce(sum(x.minutes), 0) FROM sessions x WHERE x.source_id = s.id) AS logged_min,
+       (SELECT json_group_array(json_object('id', c.id, 'name', c.name))
+          FROM source_collections sc JOIN collections c ON c.id = sc.collection_id
+         WHERE sc.source_id = s.id) AS collections_json
 FROM sources s
 """
 
 
 def source_out(row: dict, raw: bool = False) -> dict:
     hidden = {"deleted_at"} if raw else {"deleted_at", "obsidian_key"}
-    out = {k: v for k, v in row.items() if k not in hidden}
+    out = {k: v for k, v in row.items() if k not in hidden and k != "collections_json"}
+    out["collections"] = sorted(json.loads(row.get("collections_json") or "[]"), key=lambda c: c["name"].lower())
     out["tags"] = db.tags_out(row["tags"])
     return out
 

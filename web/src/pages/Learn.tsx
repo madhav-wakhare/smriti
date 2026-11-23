@@ -1,6 +1,7 @@
 /**
- * Learn: everything you learn from (topics, articles, books, videos) as cards. Filter by kind and
- * status, search, and click a card to open it. ?kind= and ?status= keep the choice in the address.
+ * Learn: everything you learn from (topics, articles, books, videos) as cards. Collections on the left
+ * keep them organised; filter by kind and status, search, and click a card to open it. ?collection=,
+ * ?kind= and ?status= keep the choice in the address.
  */
 import clsx from "clsx";
 import { Plus, Search } from "lucide-react";
@@ -10,6 +11,7 @@ import { Ascii } from "../components/Ascii";
 import { useActions } from "../components/Layout";
 import { ObsidianIcon, useObsidianExport } from "../components/ObsidianIcon";
 import { Meter, STATUS_LABEL, StatusPill, Thumb } from "../components/learn/bits";
+import { CollectionsSidebar, DRAG_TYPE } from "../components/learn/Collections";
 import { Button, Input, PageHeader, Tabs } from "../components/ui";
 import type { Source, SourceKind, SourceStatus } from "../lib/api";
 import { SOURCE_KIND, fmtMin } from "../lib/format";
@@ -27,6 +29,7 @@ export default function Learn() {
 
   const kindParam = params.get("kind") ?? "";
   const kind = (SOURCE_KIND.some((k) => k.value === kindParam) ? kindParam : "") as SourceKind | "";
+  const collection = Number(params.get("collection")) || null;
   const statusParam = params.get("status") ?? "";
   const status: StatusFilter = STATUSES.includes(statusParam as StatusFilter) ? (statusParam as StatusFilter) : "all";
 
@@ -37,7 +40,8 @@ export default function Learn() {
       return p;
     });
 
-  const sources = useMemo(() => all ?? [], [all]);
+  const everything = useMemo(() => all ?? [], [all]);
+  const sources = useMemo(() => (collection ? everything.filter((s) => s.collections.some((c) => c.id === collection)) : everything), [everything, collection]);
   const ofKind = useMemo(() => sources.filter((s) => !kind || s.kind === kind), [sources, kind]);
   const shown = useMemo(() => {
     const n = q.trim().toLowerCase();
@@ -62,7 +66,11 @@ export default function Learn() {
           </Button>
         }
       />
-      <div className="space-y-5 px-4 md:px-8">
+      <div className="grid gap-6 px-4 md:grid-cols-[200px_minmax(0,1fr)] md:px-8">
+        <aside className="md:sticky md:top-4 md:self-start">
+          <CollectionsSidebar selected={collection} onSelect={(id) => set("collection", id ? String(id) : "")} total={everything.length} />
+        </aside>
+      <div className="min-w-0 space-y-5">
         <div className="flex flex-wrap items-center gap-2">
           {kinds.map((k) => (
             <Chip key={k.value || "all"} on={kind === k.value} onClick={() => set("kind", k.value)}>
@@ -114,6 +122,7 @@ export default function Learn() {
           </div>
         )}
       </div>
+      </div>
     </>
   );
 }
@@ -139,7 +148,14 @@ function SourceCard({ s }: { s: Source }) {
   const book = s.kind === "book";
   const byline = [s.author, s.site].filter(Boolean).join(" · ");
   return (
-    <li className="group relative">
+    <li
+      className="group relative"
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData(DRAG_TYPE, String(s.id));
+        e.dataTransfer.effectAllowed = "copy";
+      }}
+    >
       <button
         onClick={() => openSource(s.id)}
         className="flex h-full w-full gap-3 rounded-xl border border-line bg-surface p-3 text-left transition-colors hover:border-line-strong hover:bg-surface-2/50"
@@ -148,6 +164,7 @@ function SourceCard({ s }: { s: Source }) {
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="line-clamp-2 pr-7 text-[14px] font-medium">{s.title || "Untitled"}</span>
           {byline && <span className="truncate text-[12px] text-fg-2">{byline}</span>}
+          {s.collections.length > 0 && <span className="truncate text-[12px] text-fg-3">{s.collections.map((c) => c.name).join(" · ")}</span>}
           <span className="mt-auto flex items-center gap-2 pt-2">
             <StatusPill status={s.status} />
             {s.logged_min > 0 && <span className="font-mono text-[12px] text-fg-3 tabular-nums">{fmtMin(s.logged_min)}</span>}

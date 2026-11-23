@@ -16,6 +16,7 @@ import { BlurInput, BlurTextarea, parseTags, useWrite } from "./common";
 import { useActions } from "./Layout";
 import { KIND_LABEL, Meter, STATUS_LABEL, Thumb, ago } from "./learn/bits";
 import { TimeBox } from "./time";
+import { SourceCollections } from "./learn/Collections";
 import { Button, IconButton, Input, Tabs, Textarea, useToast } from "./ui";
 
 export function SourceDrawer({ sourceId, onClose }: { sourceId: number | null; onClose: () => void }) {
@@ -135,6 +136,10 @@ function SourceBody({ id, onClose }: { id: number; onClose: () => void }) {
               <Progress source={s} onSave={patch} />
             </Setting>
           )}
+
+          <Setting label="Collections">
+            <SourceCollections source={s} />
+          </Setting>
 
           <Setting label="Tags">
             <BlurInput value={s.tags.join(", ")} onSave={(v) => patch({ tags: parseTags(v) })} placeholder="e.g. rust, databases" aria-label="Tags" />

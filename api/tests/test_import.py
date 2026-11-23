@@ -117,3 +117,14 @@ def test_arc_obsidian_notes_are_linked(imported):
     arc_notes = arc_rows("""SELECT (SELECT count(*) FROM items WHERE type = 'learning' AND obsidian_path IS NOT NULL)
                                  + (SELECT count(*) FROM articles WHERE obsidian_path IS NOT NULL)""")[0][0]
     assert db.scalar(conn, "SELECT count(*) FROM sources WHERE obsidian_path IS NOT NULL AND obsidian_key IS NOT NULL") == arc_notes
+
+
+def test_arc_collections_come_across(imported, cfg):
+    _, conn = imported
+    arc_cols = arc_rows("SELECT count(*) FROM collections")[0][0]
+    assert db.scalar(conn, "SELECT count(*) FROM collections") == arc_cols
+    filed = arc_rows("""SELECT count(DISTINCT article_id) FROM (SELECT article_id FROM article_collections
+                         UNION SELECT id FROM articles WHERE collection_id IS NOT NULL)""")[0][0]
+    assert db.scalar(conn, "SELECT count(DISTINCT source_id) FROM source_collections") == filed
+    from smriti.importer_arc import import_collections
+    assert import_collections(ARC, cfg)["links"] == 0  # a full import already filed them

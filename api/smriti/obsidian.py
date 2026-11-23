@@ -62,7 +62,10 @@ def render(s: dict, key: str) -> str:
         lines.append(f"author: {_q(s['author'])}")
     if s.get("site"):
         lines.append(f"site: {_q(s['site'])}")
-    lines += [f"tags: [{tags}]", f"status: {s['status']}", f"saved: {s['created_at'][:10]}"]
+    lines.append(f"tags: [{tags}]")
+    if s.get("collections"):
+        lines.append("collections: [" + ", ".join(_q(c["name"]) for c in s["collections"]) + "]")
+    lines += [f"status: {s['status']}", f"saved: {s['created_at'][:10]}"]
     if s.get("done_at"):
         lines.append(f"done: {s['done_at'][:10]}")
     if s["kind"] == "book" and s.get("total"):
@@ -120,10 +123,19 @@ def write_note(conn: sqlite3.Connection, cfg: Config, table: str, row: dict, key
     return rel
 
 
+def default_folder(cfg: Config, s: dict) -> str:
+    """Where a new note goes. Articles go to a subfolder named after their first collection, as in Arc."""
+    if s["kind"] != "article":
+        return cfg.obsidian_folder
+    if s.get("collections"):
+        return f"{cfg.obsidian_articles_folder.rstrip('/')}/{safe_filename(s['collections'][0]['name'])}".strip("/")
+    return cfg.obsidian_articles_folder
+
+
 def export(conn: sqlite3.Connection, cfg: Config, s: dict) -> str:
     """Write (or rewrite) the note for source `s`."""
     key = key_of(s["id"])
-    folder = cfg.obsidian_articles_folder if s["kind"] == "article" else cfg.obsidian_folder
+    folder = default_folder(cfg, s)
     return write_note(conn, cfg, "sources", s, key, folder, render(s, key))
 
 
@@ -193,7 +205,7 @@ def refresh_task(conn: sqlite3.Connection, cfg: Config, task_id: int) -> None:
             pass  # the vault is not connected right now; the next manual export will catch up
 
 
-NOTE_FIELDS = {"title", "url", "author", "site", "summary", "body", "status", "tags", "kind", "progress", "total"}
+NOTE_FIELDS = {"title", "url", "author", "site", "summary", "body", "status", "tags", "kind", "progress", "total", "collections"}
 
 
 def refresh_if_exported(conn: sqlite3.Connection, cfg: Config, s: dict, changed: set[str]) -> None:

@@ -49,6 +49,8 @@ class SourcePatch(BaseModel):
     total: int | None = Field(default=None, ge=0)
     tags: list[str] | None = None
     ref: str | None = None
+    # The collections this source sits in (replaces the whole set).
+    collection_ids: list[int] | None = None
 
 
 def status_values(kind: str, total: int | None, started_at: str | None, status: str, ts: str) -> dict:
@@ -83,6 +85,21 @@ def fill_from_link(values: dict, cfg: Config) -> None:
         values["image"] = found["image"]
 
 
+def set_collections(conn: sqlite3.Connection, source_id: int, collection_ids: list[int]) -> bool:
+    """Put a source in exactly these collections. Returns whether anything changed."""
+    wanted = set(collection_ids)
+    for cid in wanted:
+        if not db.scalar(conn, "SELECT 1 FROM collections WHERE id = ?", (cid,)):
+            raise invalid(f"Collection {cid} not found")
+    have = {r["collection_id"] for r in db.all_rows(conn, "SELECT collection_id FROM source_collections WHERE source_id = ?", (source_id,))}
+    for cid in have - wanted:
+        conn.execute("DELETE FROM source_collections WHERE source_id = ? AND collection_id = ?", (source_id, cid))
+    for cid in wanted - have:
+        conn.execute("INSERT INTO source_collections (source_id, collection_id, added_at) VALUES (?, ?, ?)",
+                     (source_id, cid, clock.now()))
+    return have != wanted
+
+
 def _live(conn: sqlite3.Connection, source_id: int) -> dict:
     models.source(conn, source_id)  # 404 when missing
     return db.one(conn, "SELECT * FROM sources WHERE id = ?", (source_id,))
@@ -90,8 +107,11 @@ def _live(conn: sqlite3.Connection, source_id: int) -> dict:
 
 @router.get("")
 def list_sources(conn: Conn, kind: Kind | None = None, status: Status | None = None, tag: str | None = None,
-                 q: str | None = None):
+                 q: str | None = None, collection_id: int | None = None):
     where, args = [], []
+    if collection_id is not None:
+        where.append("EXISTS (SELECT 1 FROM source_collections sc WHERE sc.source_id = s.id AND sc.collection_id = ?)")
+        args.append(collection_id)
     if kind:
         where.append("s.kind = ?")
         args.append(kind)
@@ -133,6 +153,7 @@ def get_source(source_id: int, conn: Conn):
 def update_source(source_id: int, data: SourcePatch, conn: Conn, cfg: Cfg):
     old = _live(conn, source_id)
     changes = data.model_dump(exclude_unset=True)
+    collection_ids = changes.pop("collection_ids", None)
     for field in ("kind", "title", "author", "site", "summary", "body", "status", "progress", "tags"):
         if field in changes and changes[field] is None:
             raise invalid(f"{field} cannot be null")
@@ -154,10 +175,16 @@ def update_source(source_id: int, data: SourcePatch, conn: Conn, cfg: Cfg):
         kind = values.get("kind", old["kind"])
         total = values.get("total", old["total"])
         values.update(status_values(kind, total, old["started_at"], values["status"], ts))
+    if collection_ids is not None and set_collections(conn, source_id, collection_ids):
+        values.setdefault("updated_at", ts)
+        changed_collections = True
+    else:
+        changed_collections = False
     if values:
         values["updated_at"] = ts
         db.update(conn, "sources", source_id, values)
-        obsidian.refresh_if_exported(conn, cfg, models.source(conn, source_id, raw=True), set(values))
+        changed = set(values) | ({"collections"} if changed_collections else set())
+        obsidian.refresh_if_exported(conn, cfg, models.source(conn, source_id, raw=True), changed)
     return models.source(conn, source_id)
 
 
