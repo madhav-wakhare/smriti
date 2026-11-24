@@ -94,7 +94,7 @@ export default function Today() {
             </div>
           </Box>
 
-          <GoTo to="/inbox" show={!!data?.open_captures} title={`${data?.open_captures} in your inbox`} hint="Captures waiting to be sorted." />
+          <GoTo to="/radar" show={!!data?.open_captures} title={`${data?.open_captures} on your radar`} hint="Notes waiting to be sorted." />
 
           {!!data?.revisits_due.length && (
             <Box title="To revisit" to="/revisit" action={<Link to="/revisit" className="text-[13px] text-accent hover:underline">Review</Link>}>

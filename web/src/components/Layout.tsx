@@ -38,17 +38,16 @@ export function useActions() {
 
 // ---------------------------------------------------------------- theme (one store for the app)
 
-export type Theme = "black" | "terminal" | "obsidian" | "white";
+export type Theme = "obsidian" | "black" | "white";
 export const THEMES: { value: Theme; label: string; color: string; accent: string }[] = [
-  { value: "black", label: "Black", color: "#000000", accent: "#ffffff" },
-  { value: "terminal", label: "Terminal", color: "#0d180a", accent: "#7fee64" },
   { value: "obsidian", label: "Obsidian", color: "#242a2f", accent: "#7ba7da" },
+  { value: "black", label: "Black", color: "#000000", accent: "#ffffff" },
   { value: "white", label: "White", color: "#ffffff", accent: "#23860f" },
 ];
 const themeListeners = new Set<() => void>();
 const readTheme = (): Theme => {
   const t = document.documentElement.dataset.theme;
-  return THEMES.some((x) => x.value === t) ? (t as Theme) : "terminal";
+  return THEMES.some((x) => x.value === t) ? (t as Theme) : "obsidian";
 };
 function writeTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
@@ -145,7 +144,7 @@ const TABS = [
   { to: "/", label: "Today", end: true },
   { to: "/tasks", label: "Tasks" },
   { to: "/learn", label: "Learn" },
-  { to: "/inbox", label: "Inbox", count: "captures" as const },
+  { to: "/radar", label: "Radar", count: "captures" as const },
   { to: "/revisit", label: "Revisit" },
   { to: "/report", label: "Report" },
 ];

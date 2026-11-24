@@ -1,5 +1,5 @@
 /**
- * Inbox: quick notes to sort out later. Type in the box and press Enter to capture. Turn each one
+ * Radar: quick notes to sort out later. Type in the box and press Enter to capture. Turn each one
  * into a task, a source or something to revisit, or dismiss it.
  */
 import { ChevronDown, CornerDownLeft } from "lucide-react";
@@ -36,7 +36,7 @@ function byDay(items: Capture[]) {
   return out;
 }
 
-export default function Inbox() {
+export default function Radar() {
   const [status, setStatus] = useState<Status>("open");
   const { data: open } = useCaptures("open");
   const { data: kept } = useCaptures("kept");
@@ -63,7 +63,7 @@ export default function Inbox() {
     toast(as === "revisit" ? "Added to Revisit" : `Made a ${as}`, "default", go ? { label: "Open", onClick: go } : undefined);
   };
   const dismiss = (c: Capture) => write(() => api.post(`/captures/${c.id}/dismiss`));
-  const reopen = (c: Capture) => write(() => api.patch(`/captures/${c.id}`, { status: "open" }), "Back in the inbox");
+  const reopen = (c: Capture) => write(() => api.patch(`/captures/${c.id}`, { status: "open" }), "Back on your radar");
   const remove = async (c: Capture) => {
     const ok = await write(async () => (await api.del(`/captures/${c.id}`), true));
     if (ok) toast("Deleted", "default", { label: "Undo", onClick: () => void write(() => api.post(`/trash/capture/${c.id}/restore`)) });
@@ -71,7 +71,7 @@ export default function Inbox() {
 
   return (
     <>
-      <PageHeader title="Inbox" lede="Jot things down now, sort them out later." />
+      <PageHeader title="Radar" lede="Catch things now, sort them out later." />
       <div className="max-w-3xl space-y-5 px-4 md:px-8">
         <form
           onSubmit={(e) => {
@@ -170,7 +170,7 @@ export default function Inbox() {
                       {c.status === "dismissed" && (
                         <>
                           <Button size="sm" onClick={() => reopen(c)}>
-                            Back to inbox
+                            Back to Radar
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => remove(c)}>
                             Delete

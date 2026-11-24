@@ -4,9 +4,9 @@ import { Kbd, Modal } from "./ui";
 /** Press G, then one of these keys, to jump to a page. */
 export const GO_TO: Record<string, { to: string; label: string }> = {
   t: { to: "/", label: "Today" },
-  i: { to: "/inbox", label: "Inbox" },
   k: { to: "/tasks", label: "Tasks" },
   l: { to: "/learn", label: "Learn" },
+  a: { to: "/radar", label: "Radar" },
   r: { to: "/revisit", label: "Revisit" },
   p: { to: "/report", label: "Week report" },
   s: { to: "/settings", label: "Settings" },
@@ -29,7 +29,7 @@ export const SHORTCUTS: { group: string; items: [string, string[]][] }[] = [
       ["New task", ["C"]],
       ["New source", ["S"]],
       ["Add to Revisit", ["R"]],
-      ["Capture to the inbox", ["N"]],
+      ["Add to Radar", ["N"]],
     ],
   },
   { group: "Go to", items: Object.values(GO_TO).map((g, i) => [g.label, ["G", Object.keys(GO_TO)[i].toUpperCase()]]) },

@@ -11,7 +11,7 @@ import Today from "./pages/Today";
 const Tasks = lazy(() => import("./pages/Tasks"));
 const Learn = lazy(() => import("./pages/Learn"));
 const Revisit = lazy(() => import("./pages/Revisit"));
-const Inbox = lazy(() => import("./pages/Inbox"));
+const Radar = lazy(() => import("./pages/Radar"));
 const Report = lazy(() => import("./pages/Report"));
 const Trash = lazy(() => import("./pages/Trash"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -31,7 +31,8 @@ createRoot(document.getElementById("root")!).render(
               <Route path="learn" element={<Learn />} />
               <Route path="revisit" element={<Revisit />} />
               <Route path="recall" element={<Navigate to="/revisit" replace />} />
-              <Route path="inbox" element={<Inbox />} />
+              <Route path="radar" element={<Radar />} />
+              <Route path="inbox" element={<Navigate to="/radar" replace />} />
               <Route path="report" element={<Report />} />
               <Route path="trash" element={<Trash />} />
               <Route path="settings" element={<Settings />} />
@@ -50,7 +51,7 @@ const preload = () =>
     () => import("./pages/Tasks"),
     () => import("./pages/Learn"),
     () => import("./pages/Revisit"),
-    () => import("./pages/Inbox"),
+    () => import("./pages/Radar"),
     () => import("./pages/Report"),
     () => import("./pages/Settings"),
     () => import("./pages/Trash"),

@@ -480,7 +480,7 @@ export function CaptureModal({ open, onClose }: { open: boolean; onClose: () => 
     e.preventDefault();
     if (!text.trim() || busy) return;
     setBusy(true);
-    const c = await write(() => api.post<Capture>("/captures", { text: text.trim() }), "Saved to your inbox");
+    const c = await write(() => api.post<Capture>("/captures", { text: text.trim() }), "Added to Radar");
     setBusy(false);
     if (c) onClose();
   };
@@ -489,7 +489,7 @@ export function CaptureModal({ open, onClose }: { open: boolean; onClose: () => 
     <Modal open={open} onClose={onClose} title="Capture">
       <form onSubmit={submit}>
         <Input autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder="What's on your mind?" aria-label="What's on your mind?" className="!h-10 text-[15px]" />
-        <p className="mt-2 text-[12px] text-fg-3">Press Enter to save it to your inbox.</p>
+        <p className="mt-2 text-[12px] text-fg-3">Press Enter to add it to Radar.</p>
       </form>
     </Modal>
   );

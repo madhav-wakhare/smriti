@@ -15,8 +15,8 @@ import { Kbd } from "./ui";
 
 type Entry = { id: string; group: string; label: string; hint?: string; sub?: string; snippet?: string; run: () => void };
 
-const GROUP_OF: Record<SearchHit["kind"], string> = { task: "Tasks", source: "Sources", revisit: "Revisit", capture: "Inbox" };
-const ORDER = ["Tasks", "Sources", "Revisit", "Inbox", "Go to", "Create"];
+const GROUP_OF: Record<SearchHit["kind"], string> = { task: "Tasks", source: "Sources", revisit: "Revisit", capture: "Radar" };
+const ORDER = ["Tasks", "Sources", "Revisit", "Radar", "Go to", "Create"];
 
 /** A search snippet, with [matched] words highlighted. */
 function Snippet({ text }: { text: string }) {
@@ -79,7 +79,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           sub: h.key ?? undefined,
           snippet: h.snippet,
           run: run(() =>
-            h.kind === "task" ? aRef.current.openTask(h.id) : h.kind === "source" ? aRef.current.openSource(h.id) : h.kind === "revisit" ? navigate(`/revisit?item=${h.id}`) : navigate("/inbox"),
+            h.kind === "task" ? aRef.current.openTask(h.id) : h.kind === "source" ? aRef.current.openSource(h.id) : h.kind === "revisit" ? navigate(`/revisit?item=${h.id}`) : navigate("/radar"),
           ),
         });
     const needle = q.trim().toLowerCase();

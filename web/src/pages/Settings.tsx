@@ -22,7 +22,7 @@ export default function Settings() {
         <Box title="Projects" hint="Tasks are filed under a project. Its short key starts every task key, like WORK-12.">
           <Projects />
         </Box>
-        <Box title="Quotes" hint="One shows on Today and changes every 2 minutes. Hover it to keep it, or click the arrow for the next.">
+        <Box title="Quotes" hint="One shows on Today and changes to a random one every 15 seconds. Hover it to keep it, or click the arrow for another.">
           <Quotes />
         </Box>
         <Box title="Obsidian" hint="Save sources (topics, videos, articles and books) as notes in your Obsidian vault.">

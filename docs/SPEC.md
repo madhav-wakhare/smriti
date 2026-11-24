@@ -25,7 +25,7 @@ file disagree, fix one of them so they agree again.
 | **Check**   | One checklist line on a task.                                   | subtasks                                                   |
 | **Event**   | A logged change to a task or source (field, old, new).          | history                                                    |
 | **Day**     | The end-of-day review: went well, blockers, tomorrow.           | daily reviews                                              |
-| **Quote**   | A short line that keeps you going; Today shows one, changing every 2 minutes. | quotes                                                     |
+| **Quote**   | A short line that keeps you going; Today shows one, switching to a random one every 15 seconds. | quotes                                                     |
 | **Tag**     | A free word on tasks, sources and captures.                     | labels, article collections, article tags                  |
 
 Dropped on purpose: the weekend planner, thumbnail caching, the settings

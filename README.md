@@ -10,7 +10,7 @@ It runs on your own computer in one Docker container and keeps everything in one
 no account and no cloud. The only outside calls are optional lookups (a page's title when you paste a
 link, book details from Open Library), and you can turn those off.
 
-![Smriti's Today page: the day's plan with time logged, a quote, and cards for the inbox, things to revisit and tasks waiting longest](docs/screenshots/today.webp)
+![Smriti's Today page: the day's plan with time logged, a quote, and cards for Radar, things to revisit and tasks waiting longest](docs/screenshots/today.webp)
 
 ## A quick tour
 
@@ -65,9 +65,9 @@ link, book details from Open Library), and you can turn those off.
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <b>Inbox</b><br>
+      <b>Radar</b><br>
       <sub>Jot something down now. Later, make it a task, a source or a revisit, or dismiss it.</sub><br><br>
-      <img src="docs/screenshots/inbox.webp" alt="Inbox with captured notes and buttons to sort them">
+      <img src="docs/screenshots/radar.webp" alt="Radar with captured notes and buttons to sort them">
     </td>
     <td width="50%" valign="top">
       <b>Report</b><br>
@@ -179,19 +179,18 @@ The weekend planner is not part of Smriti, so it is left behind.
   Configuration).
 - Revisit is for things you want to keep fresh: an idea, a question to ask yourself, notes, a link.
   Press "Seen it today" when you've gone over one, and the ones you haven't seen in longest come first.
-- The Inbox is for quick notes you'll sort later. Press `N` anywhere, type, and press Enter. From the
-  Inbox, turn each one into a task, a source or a revisit item, or dismiss it.
+- Radar is for quick notes you'll sort later. Press `N` anywhere, type, and press Enter. From the
+  Radar page, turn each one into a task, a source or a revisit item, or dismiss it.
 
 ### Everything else
 
-- Search with `⌘K` (`Ctrl K`) finds tasks, sources, revisit items and inbox notes, and jumps to pages.
+- Search with `⌘K` (`Ctrl K`) finds tasks, sources, revisit items and Radar notes, and jumps to pages.
   Type a key like `WORK-12` to find that task.
 - Deleted things go to Trash for 30 days, and you can restore them from there. Deleting a task, source or
   revisit item also shows an Undo button for a few seconds.
-- Today shows one of your quotes and changes it every 2 minutes. Add and edit them in Settings.
-- There are four themes: Black, Terminal (green on dark), Obsidian (slate and soft blue, after the
-  "Claude Pane" Obsidian theme, in Anthropic Sans when it is installed) and White. Choose one in
-  Settings.
+- Today shows one of your quotes and switches to a random one every 15 seconds. Add and edit them in Settings.
+- There are three themes: Obsidian (slate and soft blue, after the "Claude Pane" Obsidian theme, in
+  Anthropic Sans when it is installed), which is the default, Black and White. Choose one in Settings.
 - On a phone, the page tabs move to a row you can scroll sideways.
 
 ## Keyboard shortcuts
@@ -203,8 +202,8 @@ The weekend planner is not part of Smriti, so it is left behind.
 | `C` | New task |
 | `S` | New source |
 | `R` | Add to Revisit |
-| `N` | Capture to the Inbox |
-| `G` then `T`, `K`, `L`, `I`, `R`, `P` or `S` | Go to Today, Tasks, Learn, Inbox, Revisit, Report or Settings |
+| `N` | Add to Radar |
+| `G` then `T`, `K`, `L`, `A`, `R`, `P` or `S` | Go to Today, Tasks, Learn, Radar, Revisit, Report or Settings |
 | `Esc` | Close a window or dialog |
 
 ## Commands
