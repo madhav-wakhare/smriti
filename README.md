@@ -1,6 +1,6 @@
 # Smriti
 
-<p align="center"><img src="web/public/smriti.svg" width="88" alt="Smriti's mark: स्मृ, the first sound of स्मृति"></p>
+<p align="center"><img src="web/public/smriti.svg" width="88" alt="Smriti's mark: a stepped S made of five bars"></p>
 
 Smriti (स्मृति, "memory") is a personal tracker for your work and for what you learn. You plan the
 day, move tasks across a board, log the time you spend, keep a reading list, and come back to ideas
@@ -190,7 +190,7 @@ The weekend planner is not part of Smriti, so it is left behind.
   revisit item also shows an Undo button for a few seconds.
 - Today shows one of your quotes and changes it every 2 minutes. Add and edit them in Settings.
 - There are four themes: Black, Terminal (green on dark), Obsidian (slate and soft blue, after the
-  "Claude Pane" Obsidian theme, in Anthropic Sans when it is installed) and White. Switch from the gear menu or in
+  "Claude Pane" Obsidian theme, in Anthropic Sans when it is installed) and White. Choose one in
   Settings.
 - On a phone, the page tabs move to a row you can scroll sideways.
 
@@ -269,5 +269,4 @@ Start with [docs/SPEC.md](docs/SPEC.md) for how Smriti stores things and what th
 
 ## Credits
 
-The स्मृ mark is drawn from [Noto Sans Devanagari](https://fonts.google.com/noto/specimen/Noto+Sans+Devanagari)
-(SIL Open Font License 1.1). The UI uses IBM Plex Sans and IBM Plex Mono.
+The UI uses IBM Plex Sans and IBM Plex Mono.

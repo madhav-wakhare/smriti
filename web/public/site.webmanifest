@@ -4,8 +4,8 @@
   "description": "Plan the day, log time, keep a reading list and revisit ideas.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0d180a",
-  "theme_color": "#0d180a",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a1a1a",
   "icons": [
     {
       "src": "/icon-192.png",

@@ -4,13 +4,12 @@
  * (?task=12, ?source=4), so a link or the back button reaches them.
  */
 import clsx from "clsx";
-import { CheckSquare, Inbox, Library, Lightbulb, Palette, Plus, Search, Settings, Square, Trash2 } from "lucide-react";
-import { Suspense, createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { CheckSquare, Inbox, Library, Lightbulb, Plus, Search, Settings, Square, Trash2 } from "lucide-react";
+import { Suspense, createContext, useContext, useEffect, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { clock } from "../lib/format";
-import { SMRITI_GLYPH } from "../lib/glyph";
 import { useCaptures, useNow, useRefresh, useRunning } from "../lib/hooks";
 import { Button, IconButton, Kbd, Menu as UiMenu } from "./ui";
 import { CaptureModal, RevisitModal, NewSourceModal, NewTaskModal, type NewTaskDefaults } from "./Create";
@@ -66,40 +65,28 @@ export function useTheme() {
   return [theme, writeTheme] as const;
 }
 
-export function ThemeSwitch() {
-  const [theme, setTheme] = useTheme();
-  return (
-    <div className="flex items-center gap-4 text-[12px]" role="radiogroup" aria-label="Theme">
-      {THEMES.map((t) => (
-        <button
-          key={t.value}
-          role="radio"
-          aria-checked={theme === t.value}
-          onClick={() => setTheme(t.value)}
-          className={clsx("relative py-1 transition-colors", theme === t.value ? "text-fg" : "text-fg-3 hover:text-fg-2")}
-        >
-          {t.label}
-          <span className={clsx("absolute inset-x-0 -bottom-px h-px bg-accent transition-transform duration-200", theme === t.value ? "scale-x-100" : "scale-x-0")} />
-        </button>
-      ))}
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------- pieces of the shell
 
-/** Smriti's mark: स्मृ, the first sound of स्मृति (memory), with the name beside it. */
+/** The stepped S: five bars on a 20x29 grid (4 units per bar step), drawn in the text colour. */
+export const S_BARS = [
+  { x: 6, y: 0, w: 14 },
+  { x: 0, y: 6, w: 6 },
+  { x: 6, y: 12, w: 8 },
+  { x: 14, y: 18, w: 6 },
+  { x: 0, y: 24, w: 14 },
+];
+
+/** Smriti's mark: the stepped S, with the name beside it. On load the bars step in, top to bottom. */
 export function Mark({ word = true }: { word?: boolean }) {
   return (
-    <span className="mark flex items-center gap-2">
-      <svg viewBox="0 0 64 64" className="size-8 shrink-0" aria-hidden>
-        {/* Shifted so स्म sits on the same baseline as "smriti" (its headline then meets the top of the "t");
-            the vowel sign ृ hangs below, as Devanagari does. The favicon keeps the centred glyph. */}
-        <g transform="translate(0 6.4)">
-          <path className="mark-glyph" d={SMRITI_GLYPH} fill="var(--accent)" />
-        </g>
+    <span className="mark flex items-center gap-2.5">
+      <svg viewBox="0 0 20 29" className="h-6 w-auto shrink-0" aria-hidden>
+        {S_BARS.map((r, i) => (
+          <rect key={i} className="mark-bar" style={{ "--i": i } as CSSProperties} x={r.x} y={r.y} width={r.w} height={5} fill="var(--fg)" />
+        ))}
       </svg>
-      {word && <span className="text-[20px] font-medium tracking-tight text-fg">smriti</span>}
+      {word && <span className="text-[20px] font-medium tracking-tight text-fg">Smriti</span>}
     </span>
   );
 }
@@ -192,8 +179,6 @@ function Tabs() {
 
 function SettingsMenu() {
   const navigate = useNavigate();
-  const [theme, setTheme] = useTheme();
-  const next = THEMES[(THEMES.findIndex((t) => t.value === theme) + 1) % THEMES.length];
   return (
     <UiMenu
       trigger={
@@ -204,7 +189,6 @@ function SettingsMenu() {
       items={[
         { label: "Settings", icon: <Settings size={14} />, onClick: () => navigate("/settings") },
         { label: "Trash", icon: <Trash2 size={14} />, onClick: () => navigate("/trash") },
-        { label: `Theme: ${next.label}`, icon: <Palette size={14} />, onClick: () => setTheme(next.value) },
       ]}
     />
   );

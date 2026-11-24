@@ -7,8 +7,8 @@ Develop with `make dev` (UI at http://localhost:5190, API in its own container).
 
 ## Layout
 
-- **Top bar:** the mark, then the page tabs (Today, Tasks, Learn, Inbox, Revisit, Report), then the
-  running timer (when one runs), Search (⌘K), New, and a settings menu (Settings, Trash, Theme).
+- **Top bar:** the mark (a stepped S of five bars in the text colour, then "Smriti"), then the page tabs (Today, Tasks, Learn, Inbox, Revisit, Report), then the
+  running timer (when one runs), Search (⌘K), New, and a settings menu (Settings, Trash). The theme is chosen only in Settings.
   On a phone the tabs move to a second row that scrolls sideways.
 - **Pages:** `<PageHeader title lede actions />`, then content in `px-4 md:px-8`, at most 1400px wide.
 - **Tasks** has three views: Board, List and Timeline. Timeline shows a day as a trace: one row per item, its

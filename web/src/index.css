@@ -372,16 +372,30 @@
 }
 
 /* ---------------------------------------------------------------- mark
-   On load स्मृ settles into place; on hover it lifts a little. */
-@keyframes mark-in {
-  from { opacity: 0; transform: translateY(4px) scale(0.92); }
+   On load the five bars of the S step in from the left, top to bottom. On hover a blue shimmer runs down
+   the bars, one after another, as Arc's logo did; --mark-glow is that blue, tuned per theme. */
+:root {
+  --mark-glow: #56b4e9;
 }
-.mark .mark-glyph {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  animation: mark-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+:root[data-theme="obsidian"] {
+  --mark-glow: #7ba7da;
 }
-.mark-link:hover .mark-glyph {
-  transform: translateY(-2px);
+:root[data-theme="white"] {
+  --mark-glow: #2f6db5;
+}
+@keyframes mark-step {
+  from { opacity: 0; transform: translateX(-3px); }
+}
+@keyframes mark-shimmer {
+  0%, 100% { fill: var(--fg); }
+  45% { fill: var(--mark-glow); }
+}
+.mark .mark-bar {
+  animation: mark-step 300ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i) * 60ms);
+}
+.mark-link:hover .mark-bar,
+.mark-link:focus-visible .mark-bar {
+  animation: mark-shimmer 700ms ease-in-out both;
+  animation-delay: calc(var(--i) * 90ms);
 }
