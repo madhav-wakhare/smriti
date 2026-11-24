@@ -10,7 +10,7 @@ It runs on your own computer in one Docker container and keeps everything in one
 no account and no cloud. The only outside calls are optional lookups (a page's title when you paste a
 link, book details from Open Library), and you can turn those off.
 
-![Smriti's Today page: the day's plan with time logged, a quote, and cards for Radar, things to revisit and tasks waiting longest](docs/screenshots/today.webp)
+![Smriti's Today page in the Obsidian theme: the day's plan with time logged, a quote, and cards for Radar, things to revisit and tasks waiting longest](docs/screenshots/today.webp)
 
 ## A quick tour
 
@@ -66,7 +66,7 @@ link, book details from Open Library), and you can turn those off.
   <tr>
     <td width="50%" valign="top">
       <b>Radar</b><br>
-      <sub>Jot something down now. Later, make it a task, a source or a revisit, or dismiss it.</sub><br><br>
+      <sub>Catch something now. Later, make it a task, a source or a revisit, or dismiss it.</sub><br><br>
       <img src="docs/screenshots/radar.webp" alt="Radar with captured notes and buttons to sort them">
     </td>
     <td width="50%" valign="top">
