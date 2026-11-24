@@ -20,11 +20,17 @@ import { useLocalState, useProjects, useToday } from "../lib/hooks";
 export default function Today() {
   const { data } = useToday();
   const today = useTodayDate();
-  const plan = useMemo(() => {
-    if (!data) return [];
-    const seen = new Set<number>();
-    return [...data.overdue, ...data.planned].filter((t) => !seen.has(t.id) && seen.add(t.id));
-  }, [data]);
+  // Three groups, kept apart so the plan for today is never mixed with older work:
+  // what you planned for today (and anything you finished today), what was planned on an earlier
+  // day and is still open, and overdue tasks that were never put on a plan.
+  const { todayItems, carried, overdue, plan } = useMemo(() => {
+    if (!data) return { todayItems: [], carried: [], overdue: [], plan: [] };
+    const rank = (t: Task) => (t.status === "doing" ? 0 : t.status === "done" ? 2 : 1);
+    const todayItems = data.planned.filter((t) => t.planned_on === today || t.status === "done").sort((a, b) => rank(a) - rank(b));
+    const carried = data.planned.filter((t) => !todayItems.includes(t)).sort((a, b) => rank(a) - rank(b));
+    const overdue = data.overdue.filter((t) => !data.planned.some((p) => p.id === t.id));
+    return { todayItems, carried, overdue, plan: [...todayItems, ...carried, ...overdue] };
+  }, [data, today]);
   const doingElsewhere = data?.doing.filter((t) => !plan.some((p) => p.id === t.id)) ?? [];
   const longDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
@@ -34,19 +40,38 @@ export default function Today() {
       <QuoteLine />
       <div className="grid items-start gap-6 px-4 md:px-8 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
-          <Box title="Plan" to="/tasks" hint={plan.length ? `${plan.filter((t) => t.status === "done").length} of ${plan.length} done` : undefined}>
-            {data && !plan.length && (
+          <Box
+            title="Plan for today"
+            to="/tasks"
+            hint={todayItems.length ? `${todayItems.filter((t) => t.status === "done").length} of ${todayItems.length} done` : undefined}
+          >
+            {data && !todayItems.length && (
               <div className="py-4 text-center">
-                <Ascii name="wordmark" />
-                <p className="mt-3 text-[14px] text-fg-2">Nothing planned yet. Add what you want to get done today.</p>
+                {!carried.length && !overdue.length && <Ascii name="wordmark" />}
+                <p className="mt-3 text-[14px] text-fg-2">Nothing planned for today yet. Add what you want to get done.</p>
               </div>
             )}
             <ul className="divide-y divide-line">
-              {plan.map((t) => (
+              {todayItems.map((t) => (
                 <PlanRow key={t.id} task={t} today={today} />
               ))}
             </ul>
             <AddToToday plan={plan} />
+
+            {carried.length > 0 && (
+              <PlanGroup title="Carried over" note="Planned on an earlier day and still open.">
+                {carried.map((t) => (
+                  <PlanRow key={t.id} task={t} today={today} from={t.planned_on} />
+                ))}
+              </PlanGroup>
+            )}
+            {overdue.length > 0 && (
+              <PlanGroup title="Overdue, not planned" note="Past their due date and not on any plan.">
+                {overdue.map((t) => (
+                  <PlanRow key={t.id} task={t} today={today} />
+                ))}
+              </PlanGroup>
+            )}
           </Box>
 
           {doingElsewhere.length > 0 && (
@@ -152,7 +177,18 @@ function GoTo({ to, show, title, hint }: { to: string; show: boolean; title: str
   );
 }
 
-function PlanRow({ task, today }: { task: Task; today: string }) {
+/** A labelled block under today's list: older or unplanned work, kept out of today's list. */
+function PlanGroup({ title, note, children }: { title: string; note: string; children: ReactNode }) {
+  return (
+    <section className="mt-5 border-t border-line pt-3">
+      <h3 className="text-[12px] font-medium tracking-wide text-fg-2 uppercase">{title}</h3>
+      <p className="text-[12px] text-fg-3">{note}</p>
+      <ul className="mt-1 divide-y divide-line">{children}</ul>
+    </section>
+  );
+}
+
+function PlanRow({ task, today, from }: { task: Task; today: string; from?: string | null }) {
   const write = useWrite();
   const { openTask } = useActions();
   const done = task.status === "done";
@@ -165,15 +201,25 @@ function PlanRow({ task, today }: { task: Task; today: string }) {
         <span className="ml-2 font-mono text-[12px] text-fg-3">{task.key}</span>
       </button>
       <div className="ml-7 flex flex-1 items-center justify-end gap-3 sm:ml-0 sm:flex-none">
+      {from && <span className="text-[12px] whitespace-nowrap text-fg-3">From {fmtDate(from)}</span>}
       {late && <span className="text-[12px] font-medium whitespace-nowrap text-critical">Due {fmtDate(task.due_on)}</span>}
       {task.status === "doing" && <span className="text-[12px] whitespace-nowrap text-fg-2">In progress</span>}
       {!done && <PriorityMark value={task.priority} />}
       {task.logged_min > 0 && <span className="w-14 text-right font-mono text-[12px] text-fg-2 tabular-nums">{fmtMin(task.logged_min)}</span>}
       {!done && <TimerButton taskId={task.id} />}
+      {!done && task.planned_on !== today && (
+        <button
+          title="Move to today's plan"
+          onClick={() => write(() => api.patch(`/tasks/${task.id}`, { planned_on: today }))}
+          className="rounded px-1.5 py-0.5 text-[12px] whitespace-nowrap text-fg-2 ring-1 ring-line hover:bg-surface-2 hover:text-fg"
+        >
+          + Today
+        </button>
+      )}
       {task.planned_on && (
         <button
-          title="Take off today's plan"
-          aria-label="Take off today's plan"
+          title="Take off the plan"
+          aria-label="Take off the plan"
           onClick={() => write(() => api.patch(`/tasks/${task.id}`, { planned_on: null }))}
           className="rounded p-1 text-fg-3 opacity-0 group-hover:opacity-100 hover:bg-surface-2 hover:text-fg focus:opacity-100"
         >
