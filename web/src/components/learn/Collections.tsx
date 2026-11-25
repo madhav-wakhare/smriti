@@ -135,7 +135,7 @@ function Row({
     <div
       className={clsx(
         "group flex items-center gap-1 rounded-md pr-1 transition-colors",
-        active ? "bg-accent text-accent-fg" : "hover:bg-surface-2",
+        active ? "bg-surface-2 text-fg shadow-[inset_2px_0_0_var(--accent)]" : "text-fg-2 hover:bg-surface-2 hover:text-fg",
         over && "ring-2 ring-accent",
       )}
       onDragOver={(e) => {

@@ -11,6 +11,12 @@ export const KIND_LABEL: Record<SourceKind, string> = { topic: "Topic", article:
 
 const KIND_ICON = { topic: Lightbulb, article: FileText, book: BookOpen, video: PlayCircle } as const;
 
+/** The kind's small icon. */
+export function KindIcon({ kind, size = 14, className }: { kind: SourceKind; size?: number; className?: string }) {
+  const Icon = KIND_ICON[kind];
+  return <Icon size={size} className={className} aria-hidden />;
+}
+
 /** A rounded picture (book cover, thumbnail), or a soft blank with the kind's icon. */
 export function Thumb({ src, kind, className }: { src: string | null; kind: SourceKind; className?: string }) {
   const [broken, setBroken] = useState(false);
