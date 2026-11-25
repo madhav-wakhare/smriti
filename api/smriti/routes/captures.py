@@ -5,8 +5,8 @@ from typing import Literal
 from fastapi import APIRouter, Response
 from pydantic import BaseModel, Field
 
-from .. import clock, db, lookup, models
-from ..deps import Conn
+from .. import clock, db, lookup, models, obsidian
+from ..deps import Cfg, Conn
 from ..errors import conflict, invalid
 from .revisits import insert_revisit
 from .sources import insert_source
@@ -73,7 +73,7 @@ def update_capture(capture_id: int, data: CapturePatch, conn: Conn):
 
 
 @router.post("/{capture_id}/keep")
-def keep_capture(capture_id: int, data: KeepIn, conn: Conn):
+def keep_capture(capture_id: int, data: KeepIn, conn: Conn, cfg: Cfg):
     """Turn the capture into a task, source or revisit and link it."""
     cap = models.capture(conn, capture_id)
     if cap["status"] == "kept":
@@ -90,6 +90,7 @@ def keep_capture(capture_id: int, data: KeepIn, conn: Conn):
         link["source_id"] = insert_source(conn, {
             "kind": kind, "title": cap["text"], "body": cap["details"], "url": cap["url"],
             "site": lookup.site_of(cap["url"]) if cap["url"] else "", "tags": cap["tags"]})
+        obsidian.sync(conn, cfg, models.source(conn, link["source_id"], raw=True))
     else:
         link["revisit_id"] = insert_revisit(conn, {"title": cap["text"], "body": cap["details"], "url": cap["url"]})
     db.update(conn, "captures", capture_id, {**link, "status": "kept", "sorted_at": clock.now()})

@@ -136,7 +136,9 @@ def create_source(data: SourceIn, conn: Conn, cfg: Cfg):
     fill_from_link(values, cfg)
     if not values["title"]:
         raise invalid("Give a title or a url")
-    return models.source(conn, insert_source(conn, values))
+    source_id = insert_source(conn, values)
+    obsidian.sync(conn, cfg, models.source(conn, source_id, raw=True))
+    return models.source(conn, source_id)
 
 
 @router.get("/{source_id}")
@@ -184,7 +186,7 @@ def update_source(source_id: int, data: SourcePatch, conn: Conn, cfg: Cfg):
         values["updated_at"] = ts
         db.update(conn, "sources", source_id, values)
         changed = set(values) | ({"collections"} if changed_collections else set())
-        obsidian.refresh_if_exported(conn, cfg, models.source(conn, source_id, raw=True), changed)
+        obsidian.sync(conn, cfg, models.source(conn, source_id, raw=True), changed)
     return models.source(conn, source_id)
 
 

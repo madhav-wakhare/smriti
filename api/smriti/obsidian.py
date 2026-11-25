@@ -11,7 +11,7 @@ import os
 import re
 import sqlite3
 
-from . import clock
+from . import clock, models
 from .config import Config
 
 ID_FIELDS = ("smriti_id", "arc_id")
@@ -93,15 +93,17 @@ def _ours(path: str, keys: set[str]) -> bool:
     return any(f"{field}: {k}\n" in head for field in ID_FIELDS for k in keys)
 
 
-def write_note(conn: sqlite3.Connection, cfg: Config, table: str, row: dict, key: str, default_folder: str, text: str) -> str:
+def write_note(conn: sqlite3.Connection, cfg: Config, table: str, row: dict, key: str, default_folder: str, text: str,
+               move: bool = False) -> str:
     """Write `text` as the note for `row` of `table`, named after its title. Returns its path inside the vault."""
     info = status(cfg)
     if not info["writable"]:
         raise ExportError("No vault is connected, or it is read-only. Set SMRITI_VAULT_PATH in .env and run make restart.")
     keys = {key} | ({row["obsidian_key"]} if row.get("obsidian_key") else set())
     old_rel = row.get("obsidian_path")
-    # A note that exists keeps its folder (Arc filed articles by collection); a new one goes to the default.
-    folder = os.path.dirname(old_rel) if old_rel else default_folder
+    # A note that exists keeps its folder (Arc filed articles by collection, and you may have moved it);
+    # a new one, or one asked to `move`, goes to the default.
+    folder = os.path.dirname(old_rel) if old_rel and not move else default_folder
     vault = os.path.realpath(cfg.vault_dir)
     target_dir = os.path.realpath(os.path.join(vault, folder))
     if target_dir != vault and not target_dir.startswith(vault + os.sep):
@@ -136,7 +138,11 @@ def export(conn: sqlite3.Connection, cfg: Config, s: dict) -> str:
     """Write (or rewrite) the note for source `s`."""
     key = key_of(s["id"])
     folder = default_folder(cfg, s)
-    return write_note(conn, cfg, "sources", s, key, folder, render(s, key))
+    # An article saved before it had a collection sits in the plain Articles folder; once it gets one,
+    # it moves into that collection's folder. Notes anywhere else stay where they are.
+    old = s.get("obsidian_path")
+    move = bool(old) and s["kind"] == "article" and os.path.dirname(old) == cfg.obsidian_articles_folder.strip("/") and folder != os.path.dirname(old)
+    return write_note(conn, cfg, "sources", s, key, folder, render(s, key), move=move)
 
 
 PRIORITY_WORD = {0: "none", 1: "low", 2: "medium", 3: "high", 4: "urgent"}
@@ -208,10 +214,29 @@ def refresh_task(conn: sqlite3.Connection, cfg: Config, task_id: int) -> None:
 NOTE_FIELDS = {"title", "url", "author", "site", "summary", "body", "status", "tags", "kind", "progress", "total", "collections"}
 
 
-def refresh_if_exported(conn: sqlite3.Connection, cfg: Config, s: dict, changed: set[str]) -> None:
-    """After an edit: rewrite the note of a source that has one, when something in the note changed."""
-    if cfg.obsidian_auto and s.get("obsidian_path") and changed & NOTE_FIELDS:
+def sync(conn: sqlite3.Connection, cfg: Config, s: dict, changed: set[str] | None = None) -> None:
+    """Keep a source's note in step with it: with auto-save on, write the note when the source is new
+    (`changed` is None), has no note yet, or changed something the note shows. A vault that is not
+    connected is skipped quietly; `save_missing` catches up at the next start."""
+    if not cfg.obsidian_auto:
+        return
+    if changed is not None and s.get("obsidian_path") and not changed & NOTE_FIELDS:
+        return
+    try:
+        export(conn, cfg, s)
+    except ExportError:
+        pass
+
+
+def save_missing(conn: sqlite3.Connection, cfg: Config) -> int:
+    """Write a note for every live source that has none yet. Returns how many were written."""
+    if not cfg.obsidian_auto or not status(cfg)["writable"]:
+        return 0
+    saved = 0
+    for (source_id,) in conn.execute("SELECT id FROM sources WHERE deleted_at IS NULL AND obsidian_path IS NULL ORDER BY id").fetchall():
         try:
-            export(conn, cfg, s)
+            export(conn, cfg, models.source(conn, source_id, raw=True))
+            saved += 1
         except ExportError:
-            pass  # the vault is not connected right now; the next manual export will catch up
+            break
+    return saved

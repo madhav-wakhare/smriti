@@ -63,7 +63,7 @@ def rename_collection(collection_id: int, data: CollectionIn, conn: Conn, cfg: C
     # Notes list their collections, so saved notes of its live sources are rewritten with the new name.
     for r in db.all_rows(conn, """SELECT sc.source_id FROM source_collections sc JOIN sources s ON s.id = sc.source_id
                                   WHERE sc.collection_id = ? AND s.deleted_at IS NULL""", (collection_id,)):
-        obsidian.refresh_if_exported(conn, cfg, models.source(conn, r["source_id"], raw=True), {"collections"})
+        obsidian.sync(conn, cfg, models.source(conn, r["source_id"], raw=True), {"collections"})
     return one(conn, collection_id)
 
 
@@ -83,7 +83,7 @@ def add_source(collection_id: int, data: MemberIn, conn: Conn, cfg: Cfg):
     cur = conn.execute("INSERT OR IGNORE INTO source_collections (source_id, collection_id, added_at) VALUES (?, ?, ?)",
                        (data.source_id, collection_id, clock.now()))
     if cur.rowcount:
-        obsidian.refresh_if_exported(conn, cfg, models.source(conn, data.source_id, raw=True), {"collections"})
+        obsidian.sync(conn, cfg, models.source(conn, data.source_id, raw=True), {"collections"})
     return models.source(conn, data.source_id)
 
 
@@ -92,5 +92,5 @@ def remove_source(collection_id: int, source_id: int, conn: Conn, cfg: Cfg):
     one(conn, collection_id)
     cur = conn.execute("DELETE FROM source_collections WHERE source_id = ? AND collection_id = ?", (source_id, collection_id))
     if cur.rowcount:
-        obsidian.refresh_if_exported(conn, cfg, models.source(conn, source_id, raw=True), {"collections"})
+        obsidian.sync(conn, cfg, models.source(conn, source_id, raw=True), {"collections"})
     return models.source(conn, source_id)

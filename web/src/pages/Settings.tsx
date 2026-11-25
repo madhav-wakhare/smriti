@@ -262,11 +262,11 @@ function Obsidian() {
         {row("Status", v.writable ? (v.is_obsidian_vault ? "Connected" : "Connected (a folder inside your vault)") : "Read-only, so notes can't be written")}
         {row("Topics, videos and books go to", v.folder)}
         {row("Articles go to", v.articles_folder)}
-        {row("Editing a saved source", v.auto ? "updates its note" : "leaves the note until you press the gem again")}
+        {row("Saving", v.auto ? "Automatic: every source you add or edit is saved" : "Only when you press the gem")}
       </div>
       <p className="text-[13px] text-fg-3">
         Change these in <code className="font-mono">.env</code> (SMRITI_VAULT_PATH, SMRITI_OBSIDIAN_FOLDER, SMRITI_OBSIDIAN_ARTICLES_FOLDER,
-        SMRITI_OBSIDIAN_AUTO) and run make restart. A note keeps the folder it was first written to.
+        SMRITI_OBSIDIAN_AUTO) and run make restart. A note keeps the folder it was first written to, except that an article moves into its first collection's folder.
       </p>
     </div>
   );

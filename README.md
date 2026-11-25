@@ -172,9 +172,10 @@ The weekend planner is not part of Smriti, so it is left behind.
   to see only its sources, drag a card onto one to file it there, or use "Add to a collection" in the
   source's window. A source can be in several collections. A new article's note goes into a folder named
   after its first collection, as Arc did.
-- Save any source to Obsidian with the gem icon (in its window, or on its card in Learn when you hover)
-  as a Markdown note: title, link, tags, status, summary and your notes,
-  with front matter you can query. Edit the source and its note updates. Smriti only touches notes it
+- Every source you add to Learn is saved to Obsidian on its own, as a Markdown note: title, link,
+  tags, status, summary and your notes, with front matter you can query. Edit the source and its note
+  updates. If the vault isn't connected at the time, Smriti saves what it missed the next time it
+  starts. The gem icon (in a source's window, or on its card when you hover) saves one by hand. Smriti only touches notes it
   wrote, so a note of your own with the same name is never overwritten. Connect a vault first (see
   Configuration).
 - Revisit is for things you want to keep fresh: an idea, a question to ask yourself, notes, a link.
@@ -240,7 +241,7 @@ Settings come from environment variables. `make up` creates `.env` from `.env.ex
 | `SMRITI_VAULT_PATH` | (empty) | Full path of your Obsidian vault, or a folder inside it. Empty keeps Obsidian export off |
 | `SMRITI_OBSIDIAN_FOLDER` | `Smriti/Learning` | Folder in the vault for topics, videos and books |
 | `SMRITI_OBSIDIAN_ARTICLES_FOLDER` | `Smriti/Articles` | Folder in the vault for articles |
-| `SMRITI_OBSIDIAN_AUTO` | `on` | `on` updates a note when you edit its source; `off` waits until you press the gem again |
+| `SMRITI_OBSIDIAN_AUTO` | `on` | `on` saves every source to the vault when you add or edit it; `off` saves only when you press the gem |
 
 Your theme, filters and similar choices are saved in your browser.
 

@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 
-from . import __version__, config, db, errors, logs
+from . import __version__, config, db, errors, logs, obsidian
 from .config import Config
 from .routes import ROUTERS
 from .routes.trash import purge_expired
@@ -21,12 +21,14 @@ http_log = logging.getLogger("smriti.http")
 
 
 def startup(cfg: Config) -> None:
-    """Migrations run at start (factor 9); old trash goes too."""
+    """Migrations run at start (factor 9); old trash goes, and sources without an Obsidian note get one."""
     version = db.migrate(cfg.db_path)
     with db.session(cfg) as conn:
         removed = purge_expired(conn, cfg)
+        # Anything added while the vault was away (or before auto-save) gets its note now.
+        saved = obsidian.save_missing(conn, cfg)
     log.info("started", extra={"version": __version__, "schema": version, "db": cfg.db_path,
-                               "purged": removed, "tz": cfg.tz, "lookup": cfg.lookup})
+                               "purged": removed, "obsidian_saved": saved, "tz": cfg.tz, "lookup": cfg.lookup})
 
 
 def add_request_logging(app: FastAPI) -> None:

@@ -68,3 +68,33 @@ def test_article_note_goes_to_its_collection_folder(vclient, vault):
     assert 'collections: ["Inference engineering"]' in (vault / out["obsidian_path"]).read_text()
     vclient.patch(f"/api/collections/{col['id']}", json={"name": "Inference"})
     assert 'collections: ["Inference"]' in (vault / out["obsidian_path"]).read_text()  # note refreshed, file stays put
+
+
+def test_new_sources_are_saved_on_their_own(vclient, vault):
+    out = vclient.post("/api/sources", json={"kind": "topic", "title": "Raft"}).json()
+    assert out["obsidian_path"] == "learn/Raft.md" and (vault / "learn/Raft.md").exists()
+    cap = vclient.post("/api/captures", json={"text": "Paxos made simple"}).json()
+    kept = vclient.post(f"/api/captures/{cap['id']}/keep", json={"as": "source", "kind": "topic"}).json()
+    src = vclient.get(f"/api/sources/{kept['source_id']}").json()
+    assert src["obsidian_path"] == "learn/Paxos made simple.md"
+
+
+def test_auto_off_leaves_the_vault_alone(tmp_path, vault):
+    cfg = config.from_env({"SMRITI_DB_PATH": str(tmp_path / "o.db"), "SMRITI_STATIC_DIR": "", "SMRITI_LOOKUP": "off",
+                           "TZ": "Asia/Kolkata", "SMRITI_VAULT_DIR": str(vault), "SMRITI_VAULT_PATH": "/Users/me/vault",
+                           "SMRITI_OBSIDIAN_FOLDER": "learn", "SMRITI_OBSIDIAN_AUTO": "off"})
+    with TestClient(create_app(cfg)) as c:
+        out = c.post("/api/sources", json={"kind": "topic", "title": "Raft"}).json()
+    assert out["obsidian_path"] is None and not (vault / "learn").exists()
+
+
+def test_start_saves_sources_added_while_the_vault_was_away(tmp_path, vault):
+    db_path = str(tmp_path / "away.db")
+    base = {"SMRITI_DB_PATH": db_path, "SMRITI_STATIC_DIR": "", "SMRITI_LOOKUP": "off", "TZ": "Asia/Kolkata"}
+    with TestClient(create_app(config.from_env(base))) as c:  # no vault connected
+        c.post("/api/sources", json={"kind": "book", "title": "Designing Data-Intensive Applications"})
+    cfg = config.from_env({**base, "SMRITI_VAULT_DIR": str(vault), "SMRITI_VAULT_PATH": "/Users/me/vault",
+                           "SMRITI_OBSIDIAN_FOLDER": "learn"})
+    with TestClient(create_app(cfg)) as c:
+        out = c.get("/api/sources").json()[0]
+    assert out["obsidian_path"] == "learn/Designing Data-Intensive Applications.md"
