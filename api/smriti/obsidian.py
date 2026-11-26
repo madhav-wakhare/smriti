@@ -162,6 +162,8 @@ def render_task(t: dict, project: str, checks: list[dict], notes: list[dict], ke
         lines.append(f"planned: {t['planned_on']}")
     if t.get("due_on"):
         lines.append(f"due: {t['due_on']}")
+        if t.get("due_time"):
+            lines.append(f"due_time: {_q(t['due_time'])}")
     if t.get("estimate_min"):
         lines.append(f"estimate: {_q(_duration(t['estimate_min']))}")
     if t.get("url"):

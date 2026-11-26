@@ -5,7 +5,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
-import { ArrowRight, ChevronDown, X } from "lucide-react";
+import { ArrowRight, ChevronDown, Clock, X } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { BlurTextarea, TimerButton, useTodayDate, useWrite } from "../components/common";
@@ -14,7 +14,7 @@ import { Checkbox, PageHeader } from "../components/ui";
 import { Ascii } from "../components/Ascii";
 import { QuoteLine } from "../components/QuoteLine";
 import { api, qs, type Day, type Task } from "../lib/api";
-import { PriorityMark, fmtDate, fmtMin } from "../lib/format";
+import { PriorityMark, fmtClock, fmtDate, fmtDue, fmtMin } from "../lib/format";
 import { useLocalState, useProjects, useToday } from "../lib/hooks";
 
 export default function Today() {
@@ -26,7 +26,11 @@ export default function Today() {
   const { todayItems, carried, overdue, plan } = useMemo(() => {
     if (!data) return { todayItems: [], carried: [], overdue: [], plan: [] };
     const rank = (t: Task) => (t.status === "doing" ? 0 : t.status === "done" ? 2 : 1);
-    const todayItems = data.planned.filter((t) => t.planned_on === today || t.status === "done").sort((a, b) => rank(a) - rank(b));
+    // Something at a set time today (a meeting) comes first among the to-dos, earliest first.
+    const at = (t: Task) => (t.due_on === today && t.due_time ? t.due_time : "99:99");
+    const todayItems = data.planned
+      .filter((t) => t.planned_on === today || t.status === "done")
+      .sort((a, b) => rank(a) - rank(b) || at(a).localeCompare(at(b)));
     const carried = data.planned.filter((t) => !todayItems.includes(t)).sort((a, b) => rank(a) - rank(b));
     const overdue = data.overdue.filter((t) => !data.planned.some((p) => p.id === t.id));
     return { todayItems, carried, overdue, plan: [...todayItems, ...carried, ...overdue] };
@@ -202,7 +206,12 @@ function PlanRow({ task, today, from }: { task: Task; today: string; from?: stri
       </button>
       <div className="ml-7 flex flex-1 items-center justify-end gap-3 sm:ml-0 sm:flex-none">
       {from && <span className="text-[12px] whitespace-nowrap text-fg-3">From {fmtDate(from)}</span>}
-      {late && <span className="text-[12px] font-medium whitespace-nowrap text-critical">Due {fmtDate(task.due_on)}</span>}
+      {late && <span className="text-[12px] font-medium whitespace-nowrap text-critical">Due {fmtDue(task.due_on!, task.due_time)}</span>}
+      {!done && !late && task.due_time && task.due_on === today && (
+        <span className="flex items-center gap-1 rounded bg-accent-soft px-1.5 font-mono text-[12px] whitespace-nowrap text-fg tabular-nums" title="Due at">
+          <Clock size={12} className="text-accent" /> {fmtClock(task.due_time)}
+        </span>
+      )}
       {task.status === "doing" && <span className="text-[12px] whitespace-nowrap text-fg-2">In progress</span>}
       {!done && <PriorityMark value={task.priority} />}
       {task.logged_min > 0 && <span className="w-14 text-right font-mono text-[12px] text-fg-2 tabular-nums">{fmtMin(task.logged_min)}</span>}

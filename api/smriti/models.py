@@ -57,7 +57,7 @@ LEFT JOIN projects pp ON pp.id = pt.project_id
 """
 
 TASK_FIELDS = ("id", "project_id", "project_key", "parent_id", "parent_key", "title", "body", "status",
-               "priority", "planned_on", "due_on", "estimate_min", "repeat", "url", "position", "logged_min",
+               "priority", "planned_on", "due_on", "due_time", "estimate_min", "repeat", "url", "position", "logged_min",
                "checks_done", "checks_total", "children", "children_done", "created_at", "updated_at", "status_at", "done_at",
                "obsidian_path", "exported_at")
 

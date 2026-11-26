@@ -22,6 +22,8 @@ export type Task = {
   priority: Priority;
   planned_on: string | null;
   due_on: string | null;
+  /** A time of day on the due date, "15:00", for meetings and the like. */
+  due_time: string | null;
   estimate_min: number | null;
   repeat: Repeat;
   tags: string[];

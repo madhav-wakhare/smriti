@@ -37,6 +37,17 @@ export function fmtDate(iso: string | null | undefined, opts?: Intl.DateTimeForm
   return d.toLocaleDateString(undefined, opts ?? { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }) });
 }
 
+/** "15:00" as the reader's clock shows it: "3:00 PM" or "15:00". */
+export function fmtClock(hhmm: string) {
+  const [h, m] = hhmm.split(":").map(Number);
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
+/** "Nov 26, 3:00 PM", or just the date when there is no time. */
+export function fmtDue(day: string, time: string | null | undefined) {
+  return time ? `${fmtDate(day)}, ${fmtClock(time)}` : fmtDate(day);
+}
+
 export function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 }

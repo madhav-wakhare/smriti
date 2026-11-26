@@ -15,7 +15,7 @@ import { BlurInput, BlurTextarea, parseTags, useTodayDate, useWrite } from "./co
 import { useActions } from "./Layout";
 import { TimeBox } from "./time";
 import { Breadcrumb, ChildTasks, ParentField, useCloseParent } from "./work/Children";
-import { Button, Checkbox, DateInput, IconButton, Input, Modal, Select, Tabs, Textarea, useToast } from "./ui";
+import { Button, Checkbox, DateInput, IconButton, Input, Modal, Select, Tabs, Textarea, TimeInput, useToast } from "./ui";
 
 const REPEAT: { value: Repeat; label: string }[] = [
   { value: "none", label: "Does not repeat" },
@@ -161,6 +161,7 @@ function TaskBody({ id, onClose }: { id: number; onClose: () => void }) {
 
           <Setting label="Due date">
             <DateInput value={t.due_on ?? ""} onChange={(v) => patch({ due_on: v || null })} placeholder="No due date" />
+            {t.due_on && <TimeInput value={t.due_time ?? ""} onChange={(v) => patch({ due_time: v || null })} className="mt-2" />}
           </Setting>
 
           <Setting label="Project">

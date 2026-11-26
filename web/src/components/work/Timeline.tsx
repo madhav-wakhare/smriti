@@ -12,7 +12,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api, qs, type Session, type SubjectKind, type Task } from "../../lib/api";
-import { fmtMin, fmtTime } from "../../lib/format";
+import { fmtClock, fmtMin, fmtTime } from "../../lib/format";
 import { useNow } from "../../lib/hooks";
 import { addDays, useTodayDate } from "../common";
 import { useActions } from "../Layout";
@@ -252,6 +252,22 @@ export function Timeline({ tasks, projectId }: { tasks: Task[]; projectId?: numb
                   </span>
                 );
               })}
+              {(() => {
+                // A task due at a set time this day (a meeting) shows where it sits on the day.
+                const t = r.kind === "task" ? byId.get(r.id) : undefined;
+                if (!t?.due_time || t.due_on !== day) return null;
+                const at = new Date(`${day}T${t.due_time}:00`).getTime();
+                return (
+                  <span
+                    className="absolute top-1/2 z-[6] flex -translate-y-1/2 items-center gap-1.5 whitespace-nowrap"
+                    style={{ left: pct(at) }}
+                    title={`Due at ${fmtClock(t.due_time)}`}
+                  >
+                    <span className="h-4 w-0.5 rounded-full bg-accent" aria-hidden />
+                    <span className="rounded border border-accent/50 bg-surface px-1 font-mono text-[11px] text-accent tabular-nums">{fmtClock(t.due_time)}</span>
+                  </span>
+                );
+              })()}
               {!r.spans.length && r.planned && (
                 <span className="absolute inset-y-0 left-2 flex items-center text-[12px] text-fg-3">Planned, no time yet</span>
               )}

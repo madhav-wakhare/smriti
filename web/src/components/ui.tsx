@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { CalendarDays, ChevronDown, X } from "lucide-react";
+import { CalendarDays, ChevronDown, Clock, X } from "lucide-react";
 import {
   createContext,
   forwardRef,
@@ -292,6 +292,68 @@ export function DateInput({
           <X size={13} />
         </button>
       )}
+    </div>
+  );
+}
+
+/**
+ * An optional time of day ("15:00"). Empty, it is a quiet "Add a time" link, since most tasks don't need
+ * one; set, it looks like the date field, opens the browser's time picker, and has a clear button.
+ */
+export function TimeInput({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) {
+  const [editing, setEditing] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!editing) return;
+    ref.current?.focus();
+    try {
+      ref.current?.showPicker?.();
+    } catch {
+      /* the field is focused; typing works too */
+    }
+  }, [editing]);
+  if (!value && !editing)
+    return (
+      <button type="button" onClick={() => setEditing(true)} className={clsx("flex items-center gap-1.5 px-1 text-[12px] text-fg-2 hover:text-fg", className)}>
+        <Clock size={13} /> Add a time
+      </button>
+    );
+  const [h, m] = (value || "00:00").split(":").map(Number);
+  const label = value ? new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "Pick a time";
+  return (
+    <div className={clsx("relative", className)}>
+      <div className={clsx(fieldBase, "flex h-9 items-center gap-2 pr-8")}>
+        <Clock size={14} className="shrink-0 text-fg-3" />
+        <span className={clsx("truncate", !value && "text-fg-3")}>{label}</span>
+      </div>
+      <input
+        ref={ref}
+        type="time"
+        aria-label="Time"
+        value={value}
+        onChange={(e) => e.target.value && onChange(e.target.value)}
+        onBlur={() => setEditing(false)}
+        onClick={(e) => {
+          try {
+            e.currentTarget.showPicker?.();
+          } catch {
+            /* older browsers open the picker on their own */
+          }
+        }}
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+      />
+      <button
+        type="button"
+        title="Clear time"
+        aria-label="Clear time"
+        onClick={() => {
+          setEditing(false);
+          onChange("");
+        }}
+        className="absolute right-2 top-1/2 z-10 -translate-y-1/2 p-0.5 text-fg-3 hover:bg-surface-2 hover:text-fg"
+      >
+        <X size={13} />
+      </button>
     </div>
   );
 }

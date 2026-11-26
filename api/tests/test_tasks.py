@@ -124,3 +124,17 @@ def test_change_project_gives_new_key(client, make_task):
     assert moved["key"] == "HOME-1"
     events = client.get(f"/api/tasks/{task['id']}").json()["events"]
     assert any(e["field"] == "project" and e["old"] == "WORK" and e["new"] == "HOME" for e in events)
+
+
+def test_due_time_sits_on_the_due_date(client, project):
+    t = client.post("/api/tasks", json={"project_id": project["id"], "title": "1:1 with Pranay", "due_on": "2026-11-26",
+                                        "due_time": "15:00"}).json()
+    assert t["due_on"] == "2026-11-26" and t["due_time"] == "15:00"
+    assert client.patch(f"/api/tasks/{t['id']}", json={"due_time": "25:00"}).status_code == 422
+    assert client.patch(f"/api/tasks/{t['id']}", json={"due_time": "09:30"}).json()["due_time"] == "09:30"
+    cleared = client.patch(f"/api/tasks/{t['id']}", json={"due_on": None}).json()
+    assert cleared["due_on"] is None and cleared["due_time"] is None
+    r = client.patch(f"/api/tasks/{t['id']}", json={"due_time": "10:00"})
+    assert r.status_code == 422
+    bare = client.post("/api/tasks", json={"project_id": project["id"], "title": "x", "due_time": "10:00"})
+    assert bare.status_code == 422

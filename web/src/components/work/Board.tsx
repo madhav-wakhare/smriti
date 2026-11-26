@@ -21,7 +21,7 @@ import clsx from "clsx";
 import { Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { api, type Task, type TaskStatus } from "../../lib/api";
-import { PriorityMark, fmtDate } from "../../lib/format";
+import { PriorityMark, fmtDue } from "../../lib/format";
 import { useLocalState, useProjects } from "../../lib/hooks";
 import { useTodayDate, useWrite } from "../common";
 import { useActions } from "../Layout";
@@ -249,7 +249,7 @@ function Card({ task, lifted, showProject }: { task: Task; lifted?: boolean; sho
         <span className="flex-1" />
         {planned && <span className="rounded bg-accent-soft px-1.5 leading-5 font-medium text-fg">Today</span>}
         {task.due_on && !done && (
-          <span className={clsx("leading-5", late ? "font-medium text-critical" : "text-fg-2")}>Due {fmtDate(task.due_on)}</span>
+          <span className={clsx("leading-5", late ? "font-medium text-critical" : "text-fg-2")}>Due {fmtDue(task.due_on, task.due_time)}</span>
         )}
         {!done && <PriorityMark value={task.priority} />}
       </div>

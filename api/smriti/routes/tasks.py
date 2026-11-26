@@ -3,10 +3,10 @@
 import calendar
 import sqlite3
 from datetime import date, timedelta
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 from .. import clock, db, models
 from ..config import Config
@@ -18,8 +18,12 @@ router = APIRouter(prefix="/api", tags=["tasks"])
 Status = Literal["todo", "doing", "done"]
 Repeat = Literal["none", "daily", "weekdays", "weekly", "monthly"]
 STEP = 1000.0  # gap between positions in a fresh column
-EVENT_FIELDS = ("status", "priority", "planned_on", "due_on", "title")
+EVENT_FIELDS = ("status", "priority", "planned_on", "due_on", "due_time", "title")
 MAX_DEPTH = 10  # a chain may go this many levels deep (Jira itself stops at three)
+
+
+# A time of day on the due date, 24-hour "HH:MM".
+DueTime = Annotated[str, StringConstraints(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")]
 
 
 class TaskIn(BaseModel):
@@ -30,6 +34,7 @@ class TaskIn(BaseModel):
     priority: int = Field(default=0, ge=0, le=4)
     planned_on: date | None = None
     due_on: date | None = None
+    due_time: DueTime | None = None
     estimate_min: int | None = Field(default=None, ge=0)
     repeat: Repeat = "none"
     tags: list[str] = []
@@ -45,6 +50,7 @@ class TaskPatch(BaseModel):
     priority: int | None = Field(default=None, ge=0, le=4)
     planned_on: date | None = None
     due_on: date | None = None
+    due_time: DueTime | None = None
     estimate_min: int | None = Field(default=None, ge=0)
     repeat: Repeat | None = None
     tags: list[str] | None = None
@@ -180,6 +186,7 @@ def spawn_repeat(conn: sqlite3.Connection, task: dict, cfg: Config) -> int | Non
     new_id = insert_task(conn, {
         "project_id": task["project_id"], "parent_id": task["parent_id"], "title": task["title"],
         "body": task["body"], "priority": task["priority"], "planned_on": planned.isoformat(), "due_on": due,
+        "due_time": task["due_time"] if due else None,
         "estimate_min": task["estimate_min"], "repeat": task["repeat"], "tags": db.tags_out(task["tags"]),
         "url": task["url"],
     })
@@ -213,6 +220,11 @@ def apply_changes(conn: sqlite3.Connection, task_id: int, changes: dict, cfg: Co
         if field in EVENT_FIELDS:
             models.log_event(conn, "task_id", task_id, field, old[field], value)
 
+    # A time only makes sense on a due date: clearing the date clears the time.
+    if "due_on" in values and values["due_on"] is None and old["due_time"]:
+        values["due_time"] = None
+    if values.get("due_time") and not values.get("due_on", old["due_on"]):
+        raise invalid("Set a due date before a time")
     if values.get("parent_id") is not None:
         check_parent(conn, task_id, values["parent_id"])
     if "parent_id" in values:
@@ -311,6 +323,8 @@ def create_task(data: TaskIn, conn: Conn):
     values["url"] = _url(values["url"])
     values["planned_on"] = _iso(values["planned_on"])
     values["due_on"] = _iso(values["due_on"])
+    if values["due_time"] and not values["due_on"]:
+        raise invalid("Set a due date before a time")
     return models.task(conn, insert_task(conn, values))
 
 

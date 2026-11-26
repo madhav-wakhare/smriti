@@ -15,7 +15,7 @@ import { Board } from "../components/work/Board";
 import { Timeline } from "../components/work/Timeline";
 import { Button, Empty, Input, Menu, PageHeader, Tabs } from "../components/ui";
 import { api, qs, type Priority, type Task } from "../lib/api";
-import { PRIORITY, PriorityMark, TASK_STATUS, fmtDate, fmtMin } from "../lib/format";
+import { PRIORITY, PriorityMark, TASK_STATUS, fmtDue, fmtMin } from "../lib/format";
 import { useLocalState, useProjects } from "../lib/hooks";
 
 type View = "board" | "list" | "timeline";
@@ -350,7 +350,7 @@ function TaskList({ tasks }: { tasks: Task[] }) {
               <td className="px-3 whitespace-nowrap" title={PRIORITY[t.priority].label}>
                 <PriorityMark value={t.priority} />
               </td>
-              <td className="px-3 whitespace-nowrap text-fg-2">{t.due_on ? fmtDate(t.due_on) : ""}</td>
+              <td className="px-3 whitespace-nowrap text-fg-2">{t.due_on ? fmtDue(t.due_on, t.due_time) : ""}</td>
               <td className="px-3 text-right font-mono whitespace-nowrap text-fg-2 tabular-nums">{t.logged_min ? fmtMin(t.logged_min) : ""}</td>
             </tr>
           ))}
