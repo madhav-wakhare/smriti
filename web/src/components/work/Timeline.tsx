@@ -3,12 +3,13 @@
  * (first start to last stop), and each row is one task (or source or revisit item) with its spans,
  * meaning the stretches of time you worked on it, placed on the hour axis. Subtasks sit under their
  * parent. Tasks planned for the day that have no time yet show as empty rows, so the plan and what
- * happened can be read together. Hover a span for its times and note; click a row to open it.
+ * happened can be read together. The hour axis is marked every half hour; hovering a span marks its start
+ * and end on the axis and shows a card with the item, times, length and note. Click a row to open it.
  */
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api, qs, type Session, type SubjectKind, type Task } from "../../lib/api";
 import { fmtMin, fmtTime } from "../../lib/format";
@@ -31,6 +32,15 @@ type Row = {
 };
 
 const HOUR = 3_600_000;
+const hhmm = (t: number) => fmtTime(new Date(t).toISOString());
+/** 24-hour "09:30", as on the axis. */
+const hhmm24 = (t: number) => {
+  const d = new Date(t);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+};
+
+/** What the hover card shows. */
+type Tip = { x: number; y: number; title: string; code: string | null; kind: SubjectKind | "day"; start: number; end: number; running: boolean; minutes: number; note: string };
 const BAR: Record<SubjectKind, string> = { task: "bg-task", source: "bg-learning", revisit: "bg-fg-2" };
 
 export function Timeline({ tasks, projectId }: { tasks: Task[]; projectId?: number }) {
@@ -40,6 +50,7 @@ export function Timeline({ tasks, projectId }: { tasks: Task[]; projectId?: numb
   const isToday = day === today;
   const now = useNow(30_000);
   const { openTask, openSource } = useActions();
+  const [tip, setTip] = useState<Tip | null>(null);
 
   const setDay = (d: string) =>
     setParams((p) => {
@@ -124,6 +135,7 @@ export function Timeline({ tasks, projectId }: { tasks: Task[]; projectId?: numb
   const pct = (t: number) => `${Math.max(0, Math.min(100, ((t - axisStart) / axisSpan) * 100))}%`;
   const width = (a: number, b: number) => `max(3px, ${Math.max(0, ((b - a) / axisSpan) * 100)}%)`;
   const hours = Array.from({ length: toH - fromH + 1 }, (_, i) => fromH + i);
+  const halves = Array.from({ length: (toH - fromH) * 2 + 1 }, (_, i) => axisStart + (i * HOUR) / 2);
   const label = isToday ? "Today" : day === addDays(today, -1) ? "Yesterday" : new Date(`${day}T00:00:00`).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
 
   const open = (r: Row) => (r.kind === "task" ? openTask(r.id) : r.kind === "source" ? openSource(r.id) : undefined);
@@ -156,11 +168,35 @@ export function Timeline({ tasks, projectId }: { tasks: Task[]; projectId?: numb
           <div className="grid grid-cols-[260px_1fr_84px] border-b border-line text-[11px] text-fg-3">
             <div className="px-4 py-2 font-medium text-fg-2">Item</div>
             <div className="relative h-8">
-              {hours.map((h) => (
-                <span key={h} className="absolute top-2 -translate-x-1/2 font-mono tabular-nums" style={{ left: pct(dayStart + h * HOUR) }}>
-                  {String(h % 24).padStart(2, "0")}:00
-                </span>
-              ))}
+              {halves.map((t) => {
+                const whole = (t - dayStart) % HOUR === 0;
+                return (
+                  <span
+                    key={t}
+                    className={clsx("absolute top-2 -translate-x-1/2 font-mono tabular-nums transition-opacity", whole ? "text-fg-3" : "text-fg-3/60", tip && "opacity-30")}
+                    style={{ left: pct(t) }}
+                  >
+                    {hhmm24(t)}
+                  </span>
+                );
+              })}
+              {tip &&
+                // The hovered span's start and end, on the axis. A short span gets one "10:20–10:35" mark.
+                (tip.running || tip.end - tip.start < axisSpan * 0.07
+                  ? [{ t: tip.start, text: `${hhmm24(tip.start)}–${tip.running ? "now" : hhmm24(tip.end)}` }]
+                  : [
+                      { t: tip.start, text: hhmm24(tip.start) },
+                      { t: tip.end, text: hhmm24(tip.end) },
+                    ]
+                ).map((m) => (
+                  <span
+                    key={m.t}
+                    className="absolute top-1.5 z-10 -translate-x-1/2 rounded bg-accent px-1 py-0.5 font-mono text-[11px] whitespace-nowrap text-accent-fg tabular-nums"
+                    style={{ left: pct(m.t) }}
+                  >
+                    {m.text}
+                  </span>
+                ))}
             </div>
             <div className="px-3 py-2 text-right font-medium text-fg-2">Time</div>
           </div>
@@ -175,7 +211,13 @@ export function Timeline({ tasks, projectId }: { tasks: Task[]; projectId?: numb
               pct={pct}
               now={isToday ? now : null}
             >
-              <span className="absolute top-1/2 h-2.5 -translate-y-1/2 rounded-sm bg-fg-3/60" style={{ left: pct(first), width: width(first, last) }} />
+              <span
+                className="absolute top-1/2 h-2.5 -translate-y-1/2 rounded-sm bg-fg-3/60"
+                style={{ left: pct(first), width: width(first, last) }}
+                onMouseMove={(e) => setTip({ x: e.clientX, y: e.clientY, title: `${label}'s work`, code: null, kind: "day", start: first, end: last, running: spans.some((x) => x.running), minutes: total, note: "" })}
+                onMouseLeave={() => setTip(null)}
+              />
+
             </TraceRow>
           )}
 
@@ -197,14 +239,19 @@ export function Timeline({ tasks, projectId }: { tasks: Task[]; projectId?: numb
               pct={pct}
               now={isToday ? now : null}
             >
-              {r.spans.map((s) => (
-                <span
-                  key={s.id}
-                  title={`${fmtTime(new Date(s.start).toISOString())} to ${s.running ? "now (running)" : fmtTime(new Date(s.end).toISOString())} · ${fmtMin(s.minutes)}${s.note ? `\n${s.note}` : ""}`}
-                  className={clsx("absolute top-1/2 h-4 -translate-y-1/2 rounded-sm", BAR[r.kind], s.running && "animate-pulse")}
-                  style={{ left: pct(s.start), width: width(s.start, s.end) }}
-                />
-              ))}
+              {r.spans.map((s) => {
+                return (
+                  <span key={s.id}>
+                    <span
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseMove={(e) => setTip({ x: e.clientX, y: e.clientY, title: r.label, code: r.code, kind: r.kind, start: s.start, end: s.end, running: s.running, minutes: s.minutes, note: s.note })}
+                      onMouseLeave={() => setTip(null)}
+                      className={clsx("absolute top-1/2 z-[5] h-4 -translate-y-1/2 rounded-sm transition-[filter] hover:brightness-125", BAR[r.kind], s.running && "animate-pulse")}
+                      style={{ left: pct(s.start), width: width(s.start, s.end) }}
+                    />
+                  </span>
+                );
+              })}
               {!r.spans.length && r.planned && (
                 <span className="absolute inset-y-0 left-2 flex items-center text-[12px] text-fg-3">Planned, no time yet</span>
               )}
@@ -218,6 +265,8 @@ export function Timeline({ tasks, projectId }: { tasks: Task[]; projectId?: numb
           )}
         </div>
       </div>
+
+      {tip && <HoverCard tip={tip} />}
 
       <p className="flex flex-wrap items-center gap-4 text-[12px] text-fg-3">
         <span className="flex items-center gap-1.5"><span className="inline-block size-2 rounded-sm bg-task" /> Task</span>
@@ -258,10 +307,40 @@ function TraceRow({
         {hours.map((h) => (
           <span key={h} className="absolute inset-y-0 w-px bg-line/60" style={{ left: pct(dayStart + h * 3_600_000) }} aria-hidden />
         ))}
+        {hours.slice(0, -1).map((h) => (
+          <span key={`${h}.5`} className="absolute inset-y-0 w-px bg-line/25" style={{ left: pct(dayStart + h * 3_600_000 + 1_800_000) }} aria-hidden />
+        ))}
         {now && <span className="absolute inset-y-0 z-10 w-px bg-critical" style={{ left: pct(now) }} aria-hidden />}
         {children}
       </div>
       <div className="flex items-center justify-end px-3 font-mono text-[12px] whitespace-nowrap text-fg-2 tabular-nums">{total ? fmtMin(total) : ""}</div>
+    </div>
+  );
+}
+
+const KIND_WORD: Record<Tip["kind"], string> = { task: "Task", source: "Learning", revisit: "Revisit", day: "Whole day" };
+
+/** The card that follows the pointer over a span. */
+function HoverCard({ tip }: { tip: Tip }) {
+  const W = 260;
+  const left = Math.min(tip.x + 14, window.innerWidth - W - 8);
+  const top = tip.y + 16 + 140 > window.innerHeight ? tip.y - 16 - 120 : tip.y + 16;
+  return (
+    <div role="tooltip" style={{ left, top, width: W }} className="pointer-events-none fixed z-[80] rounded-lg border border-line-strong bg-bg p-3 text-[13px] shadow-lg">
+      <p className="flex items-center gap-2 text-[11px] text-fg-3">
+        <span className={clsx("inline-block size-2 rounded-sm", tip.kind === "day" ? "bg-fg-3" : BAR[tip.kind])} aria-hidden />
+        {KIND_WORD[tip.kind]}
+        {tip.code && <span className="font-mono">{tip.code}</span>}
+      </p>
+      <p className="mt-1 line-clamp-2 font-medium">{tip.title}</p>
+      <div className="mt-2 flex items-baseline justify-between gap-3 font-mono tabular-nums">
+        <span>
+          {hhmm(tip.start)} – {tip.running ? "now" : hhmm(tip.end)}
+        </span>
+        <span className="text-fg-2">{fmtMin(tip.minutes)}</span>
+      </div>
+      {tip.running && <p className="mt-1 text-[12px] text-accent">Timer running</p>}
+      {tip.note && <p className="mt-2 border-t border-line pt-2 text-[12px] text-fg-2">{tip.note}</p>}
     </div>
   );
 }
