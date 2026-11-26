@@ -9,7 +9,7 @@
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api, qs, type Session, type SubjectKind, type Task } from "../../lib/api";
 import { fmtClock, fmtMin, fmtTime } from "../../lib/format";
@@ -51,6 +51,16 @@ export function Timeline({ tasks, projectId }: { tasks: Task[]; projectId?: numb
   const now = useNow(30_000);
   const { openTask, openSource } = useActions();
   const [tip, setTip] = useState<Tip | null>(null);
+  // The axis's width in pixels, so the labels can thin out when a long day is drawn in a narrow pane.
+  const axisRef = useRef<HTMLDivElement>(null);
+  const [axisPx, setAxisPx] = useState(0);
+  useEffect(() => {
+    const el = axisRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setAxisPx(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const setDay = (d: string) =>
     setParams((p) => {
@@ -136,6 +146,10 @@ export function Timeline({ tasks, projectId }: { tasks: Task[]; projectId?: numb
   const width = (a: number, b: number) => `max(3px, ${Math.max(0, ((b - a) / axisSpan) * 100)}%)`;
   const hours = Array.from({ length: toH - fromH + 1 }, (_, i) => fromH + i);
   const halves = Array.from({ length: (toH - fromH) * 2 + 1 }, (_, i) => axisStart + (i * HOUR) / 2);
+  // Label every half hour when there is room (a label needs about 48px), else every 1, 2 or 3 hours.
+  const LABEL_PX = 48;
+  const stepMin = [30, 60, 120, 180].find((m) => !axisPx || (axisPx * m) / ((toH - fromH) * 60) >= LABEL_PX) ?? 240;
+  const ticks = halves.filter((t) => ((t - dayStart) / 60000) % stepMin === 0);
   const label = isToday ? "Today" : day === addDays(today, -1) ? "Yesterday" : new Date(`${day}T00:00:00`).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
 
   const open = (r: Row) => (r.kind === "task" ? openTask(r.id) : r.kind === "source" ? openSource(r.id) : undefined);
@@ -167,13 +181,13 @@ export function Timeline({ tasks, projectId }: { tasks: Task[]; projectId?: numb
           {/* hour axis */}
           <div className="grid grid-cols-[260px_1fr_84px] border-b border-line text-[11px] text-fg-3">
             <div className="px-4 py-2 font-medium text-fg-2">Item</div>
-            <div className="relative h-8">
-              {halves.map((t) => {
+            <div ref={axisRef} className="relative h-8">
+              {ticks.map((t) => {
                 const whole = (t - dayStart) % HOUR === 0;
                 return (
                   <span
                     key={t}
-                    className={clsx("absolute top-2 -translate-x-1/2 font-mono tabular-nums transition-opacity", whole ? "text-fg-3" : "text-fg-3/60", tip && "opacity-30")}
+                    className={clsx("absolute top-2 -translate-x-1/2 font-mono whitespace-nowrap tabular-nums transition-opacity", whole ? "text-fg-3" : "text-fg-3/60", tip && "opacity-30")}
                     style={{ left: pct(t) }}
                   >
                     {hhmm24(t)}
