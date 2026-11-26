@@ -8,7 +8,7 @@ import { PRIORITY, SOURCE_KIND } from "../lib/format";
 import { useLocalState, useProjects } from "../lib/hooks";
 import { errText, parseTags, useTodayDate, useWrite } from "./common";
 import { useActions } from "./Layout";
-import { Button, Checkbox, DateInput, Input, Modal, Select, Textarea, useToast } from "./ui";
+import { Button, Checkbox, DateInput, Input, Modal, Select, Textarea, TimeInput, useToast } from "./ui";
 
 export type NewTaskDefaults = { project_id?: number; status?: TaskStatus; planned_on?: string; parent_id?: number; priority?: Priority };
 
@@ -47,6 +47,7 @@ export function NewTaskModal({ defaults, onClose }: { defaults: NewTaskDefaults 
   const [priority, setPriority] = useState<Priority>(0);
   const [planToday, setPlanToday] = useState(false);
   const [due, setDue] = useState("");
+  const [dueTime, setDueTime] = useState("");
   const [tags, setTags] = useState("");
   const [more, setMore] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -60,6 +61,7 @@ export function NewTaskModal({ defaults, onClose }: { defaults: NewTaskDefaults 
     setPriority(defaults.priority ?? 0);
     setPlanToday(defaults.planned_on ? defaults.planned_on === today : false);
     setDue("");
+    setDueTime("");
     setTags("");
     setMore(false);
     setBusy(false);
@@ -85,6 +87,7 @@ export function NewTaskModal({ defaults, onClose }: { defaults: NewTaskDefaults 
         priority,
         planned_on: planned,
         due_on: due || null,
+        due_time: due && dueTime ? dueTime : null,
         tags: parseTags(tags),
         parent_id: defaults?.parent_id ?? null,
       }),
@@ -143,7 +146,15 @@ export function NewTaskModal({ defaults, onClose }: { defaults: NewTaskDefaults 
               </Select>
             </Label>
             <Label text="Due date">
-              <DateInput value={due} onChange={setDue} placeholder="None" />
+              <DateInput
+                value={due}
+                onChange={(v) => {
+                  setDue(v);
+                  if (!v) setDueTime("");
+                }}
+                placeholder="None"
+              />
+              {due && <TimeInput value={dueTime} onChange={setDueTime} className="mt-2" />}
             </Label>
           </div>
           <Checkbox checked={planToday} onChange={setPlanToday} label={<span className="text-[14px]">Add to today</span>} />
